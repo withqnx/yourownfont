@@ -1,0 +1,11 @@
+# Render blueprint — free Docker web service.
+# Render builds ./Dockerfile on its own servers (no local Docker needed) and
+# injects $PORT, which the Dockerfile's uvicorn command already respects.
+services:
+  - type: web
+    name: yourownfont
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /

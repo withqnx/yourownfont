@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>YourOwnFont — 손글씨로 폰트 만들기</title>
+<style>
+  :root { --fg:#1a1a1a; --muted:#6b7280; --line:#e5e7eb; --accent:#4f46e5; --bg:#fafafa; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         color: var(--fg); background: var(--bg); margin: 0; line-height: 1.5; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 1.7rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 32px; }
+  .step { background: #fff; border: 1px solid var(--line); border-radius: 12px;
+          padding: 20px 22px; margin-bottom: 18px; }
+  .step h2 { font-size: 1.05rem; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+  .num { background: var(--accent); color: #fff; width: 24px; height: 24px; border-radius: 50%;
+         display: inline-flex; align-items: center; justify-content: center; font-size: .85rem; }
+  button, .btn { font: inherit; border: 0; border-radius: 8px; padding: 10px 16px; cursor: pointer;
+                 background: var(--accent); color: #fff; text-decoration: none; display: inline-block; }
+  button:disabled { opacity: .5; cursor: default; }
+  .ghost { background: #fff; border: 1px solid var(--line); color: var(--fg); }
+  input[type=text] { font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; width: 220px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .muted { color: var(--muted); font-size: .9rem; }
+  #preview { font-size: 40px; min-height: 120px; border: 1px dashed var(--line); border-radius: 8px;
+             padding: 16px; margin-top: 12px; outline: none; }
+  .hidden { display: none; }
+  .stat { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 8px 12px;
+          border-radius: 8px; font-size: .9rem; margin-top: 12px; }
+  .err { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 8px 12px;
+         border-radius: 8px; font-size: .9rem; margin-top: 12px; }
+  .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 24px; text-align: center;
+          color: var(--muted); cursor: pointer; }
+  .drop.over { border-color: var(--accent); background: #f5f3ff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>YourOwnFont ✍️</h1>
+  <p class="sub">손글씨를 나만의 폰트(TTF)로 — 템플릿을 인쇄해 글자를 쓰고, 스캔해서 올리세요. (v1: 영문·숫자·기호)</p>
+
+  <div class="step">
+    <h2><span class="num">1</span> 템플릿 내려받기 &amp; 손글씨 작성</h2>
+    <p class="muted">PDF를 인쇄한 뒤 각 칸 안에 글자를 또박또박 쓰고, 스캔하거나 사진을 찍으세요. 네 모서리의 검은 사각형이 모두 보이게 촬영하세요.</p>
+    <a class="btn" href="/api/template" download>📄 템플릿 PDF 받기</a>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">2</span> 스캔본 업로드</h2>
+    <div class="row" style="margin-bottom:12px">
+      <label class="muted">폰트 이름</label>
+      <input type="text" id="family" value="MyHandwriting" />
+      <label class="muted">형식</label>
+      <select id="fmt" style="font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:8px">
+        <option value="ttf">TTF</option>
+        <option value="otf">OTF</option>
+      </select>
+    </div>
+    <div class="drop" id="drop">여기로 이미지를 끌어다 놓거나 클릭해 선택 (JPG/PNG)</div>
+    <input type="file" id="file" accept="image/*" class="hidden" />
+    <div class="row" style="margin-top:12px">
+      <button id="buildBtn" disabled>폰트 만들기</button>
+      <span class="muted" id="fileName"></span>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <div class="step hidden" id="resultStep">
+    <h2><span class="num">3</span> 미리보기 &amp; 내려받기</h2>
+    <div class="row">
+      <a class="btn" id="downloadBtn" href="#" download>⬇️ 폰트 내려받기 (.ttf)</a>
+    </div>
+    <div id="preview" contenteditable="true" spellcheck="false">The quick brown fox 0123 — 직접 입력해 보세요!</div>
+  </div>
+</div>
+
+<script>
+const fileInput = document.getElementById('file');
+const drop = document.getElementById('drop');
+const buildBtn = document.getElementById('buildBtn');
+const fileName = document.getElementById('fileName');
+const statusEl = document.getElementById('status');
+let chosen = null;
+
+drop.addEventListener('click', () => fileInput.click());
+['dragover','dragenter'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', ev => { if (ev.dataTransfer.files[0]) setFile(ev.dataTransfer.files[0]); });
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+
+function setFile(f) { chosen = f; fileName.textContent = f.name; buildBtn.disabled = false; }
+
+buildBtn.addEventListener('click', async () => {
+  if (!chosen) return;
+  buildBtn.disabled = true;
+  statusEl.innerHTML = '<div class="muted">처리 중… (정렬 → 글자 추출 → 폰트 조립)</div>';
+  const fd = new FormData();
+  fd.append('file', chosen);
+  fd.append('family', document.getElementById('family').value || 'MyHandwriting');
+  fd.append('fmt', document.getElementById('fmt').value);
+  try {
+    const res = await fetch('/api/build', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || '처리 실패');
+    statusEl.innerHTML = `<div class="stat">✓ ${data.filled_cells}/${data.total_cells}칸에서 글자를 인식했습니다.</div>`;
+    showResult(data.id, data.family);
+  } catch (e) {
+    statusEl.innerHTML = `<div class="err">⚠ ${e.message}</div>`;
+  } finally {
+    buildBtn.disabled = false;
+  }
+});
+
+function showResult(id, family) {
+  const url = `/api/font/${id}`;
+  const face = new FontFace(family, `url(${url})`);
+  face.load().then(f => {
+    document.fonts.add(f);
+    document.getElementById('preview').style.fontFamily = `"${family}"`;
+  });
+  document.getElementById('downloadBtn').href = url;
+  document.getElementById('resultStep').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
