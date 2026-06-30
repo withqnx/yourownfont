@@ -1,4 +1,28 @@
-# 배포 가이드 — Cloudflare Containers
+# 배포 가이드
+
+## ✅ 현재 권장: Render 무료 플랜 (과금 없음)
+
+코드는 이미 GitHub에 올라가 있습니다 → **https://github.com/withqnx/yourownfont** (private)
+`render.yaml` 블루프린트도 포함돼 있어, Render가 서버에서 `Dockerfile`을 빌드합니다 (로컬 Docker 불필요).
+
+**남은 단계 (회원님이 Render 대시보드에서 진행 — 약 2분 + 첫 빌드 5~10분):**
+
+1. https://render.com 접속 → **GitHub 계정으로 로그인** (withqnx)
+2. 우측 상단 **New +** → **Blueprint** 선택
+3. `yourownfont` 저장소 연결/승인 → Render가 `render.yaml`을 읽어 **무료 Docker 웹서비스** 생성
+4. **Apply / Create** → 빌드 시작. 끝나면 `https://yourownfont.onrender.com` 형태 URL 발급
+
+> Blueprint 메뉴가 안 보이면: **New + → Web Service → 저장소 선택 →** Runtime이 **Docker**로 자동 인식 →
+> Instance Type **Free** 선택 → Create.
+
+**무료 플랜 특성:** 15분간 요청이 없으면 잠들고, 다음 접속 시 콜드스타트 ~1분. 이후엔 정상 속도.
+
+---
+
+## 대안: Cloudflare Containers (유료 — $5/월)
+
+> ⚠️ Cloudflare Containers는 **무료 티어가 없습니다**(Workers Paid $5/월 필수).
+> 무료를 원하면 위 Render를 사용하세요. 아래는 유료 플랜을 쓸 경우의 절차입니다.
 
 이 앱은 OpenCV 등 네이티브 라이브러리를 쓰는 Python 앱이라 **Cloudflare Workers(서버리스)에는 못 올라가고**, **Cloudflare Containers**로 배포합니다. 우리 `Dockerfile`을 그대로 컨테이너로 빌드해 올리고, 그 앞단의 작은 Worker(`src/index.ts`)가 모든 요청을 컨테이너로 전달합니다.
 
