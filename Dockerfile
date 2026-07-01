@@ -1,8 +1,10 @@
 FROM python:3.12-slim
 
-# opencv-python-headless needs libgomp; add fonts so server-side rendering works
+# opencv-python-headless needs libgomp; fonts-nanum gives the template PDF a
+# Korean-capable guide font on the container (macOS AppleGothic isn't present).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgomp1 \
+        fonts-nanum \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

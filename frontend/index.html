@@ -39,11 +39,11 @@
 <body>
 <div class="wrap">
   <h1>YourOwnFont ✍️</h1>
-  <p class="sub">손글씨를 나만의 폰트(TTF)로 — 템플릿을 인쇄해 글자를 쓰고, 스캔해서 올리세요. (v1: 영문·숫자·기호)</p>
+  <p class="sub">손글씨를 나만의 한글 폰트로 — 자모(초·중·종성) 조각과 숫자·기호만 쓰면, 11,172자 전부를 자동 조합해 드립니다.</p>
 
   <div class="step">
     <h2><span class="num">1</span> 템플릿 내려받기 &amp; 손글씨 작성</h2>
-    <p class="muted">PDF를 인쇄한 뒤 각 칸 안에 글자를 또박또박 쓰고, 스캔하거나 사진을 찍으세요. 네 모서리의 검은 사각형이 모두 보이게 촬영하세요.</p>
+    <p class="muted">PDF를 인쇄한 뒤 각 칸의 안내(초성 ㄱ, 중성 ㅏ …)에 맞춰 또박또박 쓰고, 스캔하거나 사진을 찍으세요. 자모 한 벌만 쓰면 모든 글자가 만들어집니다. 네 모서리의 검은 사각형이 모두 보이게 촬영하세요.</p>
     <a class="btn" href="/api/template" download>📄 템플릿 PDF 받기</a>
   </div>
 
@@ -72,7 +72,7 @@
     <div class="row">
       <a class="btn" id="downloadBtn" href="#" download>⬇️ 폰트 내려받기 (.ttf)</a>
     </div>
-    <div id="preview" contenteditable="true" spellcheck="false">The quick brown fox 0123 — 직접 입력해 보세요!</div>
+    <div id="preview" contenteditable="true" spellcheck="false">내 손글씨로 만든 한글 폰트 0123 — 직접 입력해 보세요!</div>
   </div>
 </div>
 
@@ -104,7 +104,7 @@ buildBtn.addEventListener('click', async () => {
     const res = await fetch('/api/build', { method: 'POST', body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || '처리 실패');
-    statusEl.innerHTML = `<div class="stat">✓ ${data.filled_cells}/${data.total_cells}칸에서 글자를 인식했습니다.</div>`;
+    statusEl.innerHTML = `<div class="stat">✓ ${data.filled_cells}/${data.total_cells}칸 인식 → 한글 ${data.syllables.toLocaleString()}자를 조합했습니다.</div>`;
     showResult(data.id, data.family);
   } catch (e) {
     statusEl.innerHTML = `<div class="err">⚠ ${e.message}</div>`;

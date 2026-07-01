@@ -1,73 +1,72 @@
-"""Assemble a TTF or OTF from vectorized glyphs using fontTools.FontBuilder.
+"""Assemble a TTF or OTF from glyph contours using fontTools.FontBuilder.
 
 - ``ttf`` (default): TrueType outlines (glyf), built with TTGlyphPen.
 - ``otf``: OpenType/CFF outlines, built with T2CharStringPen.
-
-The same polygonal contours feed both; only the outline encoding differs.
 """
 from __future__ import annotations
 
 import io
+from dataclasses import dataclass, field
 
 from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.t2CharStringPen import T2CharStringPen
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 
-from .vectorize import SPACE_ADVANCE, UPM, VectorGlyph
+from .vectorize import SPACE_ADVANCE, UPM
 
 ASCENT = 800
 DESCENT = -200
 NOTDEF_ADVANCE = 500
+_NOTDEF_BOX = (60, NOTDEF_ADVANCE - 60, 0, ASCENT)
 
-_NOTDEF_BOX = (60, NOTDEF_ADVANCE - 60, 0, ASCENT)  # x0, x1, y0, y1
+Contours = list[list[tuple[int, int]]]
 
 
-def _draw_tt(vg: VectorGlyph):
+@dataclass
+class GlyphEntry:
+    name: str
+    codepoint: int
+    contours: Contours
+    advance: int = field(default=SPACE_ADVANCE)
+
+
+def _draw_tt(contours: Contours):
     pen = TTGlyphPen(None)
-    for contour in vg.contours:
-        if len(contour) < 3:
+    for c in contours:
+        if len(c) < 3:
             continue
-        pen.moveTo(contour[0])
-        for pt in contour[1:]:
+        pen.moveTo(c[0])
+        for pt in c[1:]:
             pen.lineTo(pt)
         pen.closePath()
     return pen.glyph()
 
 
-def _notdef_tt():
-    pen = TTGlyphPen(None)
-    x0, x1, y0, y1 = _NOTDEF_BOX
-    pen.moveTo((x0, y0)); pen.lineTo((x0, y1)); pen.lineTo((x1, y1)); pen.lineTo((x1, y0)); pen.closePath()
-    return pen.glyph()
-
-
-def _draw_cff(vg: VectorGlyph, width: int):
+def _draw_cff(contours: Contours, width: int):
     pen = T2CharStringPen(width, None)
-    for contour in vg.contours:
-        if len(contour) < 3:
+    for c in contours:
+        if len(c) < 3:
             continue
-        pen.moveTo(contour[0])
-        for pt in contour[1:]:
+        pen.moveTo(c[0])
+        for pt in c[1:]:
             pen.lineTo(pt)
         pen.closePath()
     return pen.getCharString()
 
 
-def _notdef_cff():
-    pen = T2CharStringPen(NOTDEF_ADVANCE, None)
+def _notdef_contours() -> Contours:
     x0, x1, y0, y1 = _NOTDEF_BOX
-    pen.moveTo((x0, y0)); pen.lineTo((x0, y1)); pen.lineTo((x1, y1)); pen.lineTo((x1, y0)); pen.closePath()
-    return pen.getCharString()
+    return [[(x0, y0), (x0, y1), (x1, y1), (x1, y0)]]
 
 
-def _xmin(vg: VectorGlyph) -> int:
-    xs = [x for c in vg.contours for x, _ in c]
+def _xmin(contours: Contours) -> int:
+    xs = [x for c in contours for x, _ in c]
     return min(xs) if xs else 0
 
 
-def build_font(vglyphs: list[VectorGlyph], family: str = "YourOwnFont",
+def build_font(entries: list[GlyphEntry], family: str = "YourOwnFont",
                fmt: str = "ttf") -> bytes:
-    """Build a TTF or OTF (bytes) from the vectorized glyphs."""
+    """Build a TTF or OTF (bytes) from glyph entries (name/codepoint/contours)."""
     fmt = fmt.lower()
     if fmt not in ("ttf", "otf"):
         raise ValueError("fmt must be 'ttf' or 'otf'")
@@ -79,20 +78,21 @@ def build_font(vglyphs: list[VectorGlyph], family: str = "YourOwnFont",
     cmap = {0x20: "space"}
 
     if is_ttf:
-        outlines = {".notdef": _notdef_tt(), "space": TTGlyphPen(None).glyph()}
+        outlines = {".notdef": _draw_tt(_notdef_contours()),
+                    "space": TTGlyphPen(None).glyph()}
     else:
-        outlines = {".notdef": _notdef_cff(),
+        outlines = {".notdef": _draw_cff(_notdef_contours(), NOTDEF_ADVANCE),
                     "space": T2CharStringPen(SPACE_ADVANCE, None).getCharString()}
 
-    for vg in vglyphs:
-        name = vg.glyph.name
-        if name in outlines:
+    for e in entries:
+        if e.name in outlines:
             continue
-        glyph_order.append(name)
-        adv = max(vg.advance_width, 1)
-        metrics[name] = (adv, _xmin(vg))
-        cmap[vg.glyph.codepoint] = name
-        outlines[name] = _draw_tt(vg) if is_ttf else _draw_cff(vg, adv)
+        glyph_order.append(e.name)
+        adv = max(e.advance, 1)
+        metrics[e.name] = (adv, _xmin(e.contours))
+        if e.codepoint >= 0:
+            cmap[e.codepoint] = e.name
+        outlines[e.name] = _draw_tt(e.contours) if is_ttf else _draw_cff(e.contours, adv)
 
     fb.setupGlyphOrder(glyph_order)
     fb.setupCharacterMap(cmap)

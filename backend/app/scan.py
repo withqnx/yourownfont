@@ -17,7 +17,7 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from .charset import Glyph
+from .charset import Cell
 from .template import PAGE_H, PAGE_W, layout_cells, marker_centers
 
 DPI = 200
@@ -31,8 +31,8 @@ CELL_H = 256
 
 
 @dataclass
-class ExtractedGlyph:
-    glyph: Glyph
+class ExtractedCell:
+    cell: Cell
     bitmap: np.ndarray  # CELL_H x CELL_W, uint8, 255=ink on 0 background
     is_blank: bool
 
@@ -128,7 +128,7 @@ def _render_cell(cell: np.ndarray, cell_w_px: int) -> tuple[np.ndarray, bool]:
     return out, is_blank
 
 
-def extract_glyphs(image_bgr: np.ndarray) -> list[ExtractedGlyph]:
+def extract_cells(image_bgr: np.ndarray) -> list[ExtractedCell]:
     """Full ingestion: align, binarize, and cut out every template cell."""
     aligned = align(image_bgr)
     binary = _binarize(aligned)
@@ -138,23 +138,23 @@ def extract_glyphs(image_bgr: np.ndarray) -> list[ExtractedGlyph]:
     aspect = boxes[0].w / boxes[0].h
     cell_w_px = max(1, int(round(CELL_H * aspect)))
 
-    results: list[ExtractedGlyph] = []
+    results: list[ExtractedCell] = []
     for box in boxes:
         x_px, top_px = _pt_to_px(box.x, box.y + box.h)  # top-left corner of writing area
         w_px = int(round(box.w * SCALE))
         h_px = int(round(box.h * SCALE))
         x = int(round(x_px))
         y = int(round(top_px))
-        cell = binary[y:y + h_px, x:x + w_px]
-        if cell.size == 0:
-            results.append(ExtractedGlyph(box.glyph, np.zeros((CELL_H, cell_w_px), np.uint8), True))
+        region = binary[y:y + h_px, x:x + w_px]
+        if region.size == 0:
+            results.append(ExtractedCell(box.cell, np.zeros((CELL_H, cell_w_px), np.uint8), True))
             continue
         # erode away the cell's printed border ink near the edges
-        cell = cell.copy()
-        b = max(2, int(0.04 * min(cell.shape)))
-        cell[:b, :] = 0; cell[-b:, :] = 0; cell[:, :b] = 0; cell[:, -b:] = 0
-        bitmap, blank = _render_cell(cell, cell_w_px)
-        results.append(ExtractedGlyph(box.glyph, bitmap, blank))
+        region = region.copy()
+        b = max(2, int(0.04 * min(region.shape)))
+        region[:b, :] = 0; region[-b:, :] = 0; region[:, :b] = 0; region[:, -b:] = 0
+        bitmap, blank = _render_cell(region, cell_w_px)
+        results.append(ExtractedCell(box.cell, bitmap, blank))
     return results
 
 

@@ -60,6 +60,7 @@ async def build(file: UploadFile = File(...), family: str = Form("YourOwnFont"),
         "fmt": result.fmt,
         "total_cells": result.total_cells,
         "filled_cells": result.filled_cells,
+        "syllables": result.syllables,
     }
 
 
