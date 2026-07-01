@@ -56,8 +56,17 @@ def _syllable_cp(cho: int, jung: int, jong: int) -> int:
     return 0xAC00 + (cho * 21 + jung) * 28 + jong
 
 
+_JUNG_O = 8      # index of ㅗ in JUNG (a horizontal vowel)
+_JONG_NG = 21    # jong value for ㅇ 받침 (JONG[20])
+
+
 def coverage_syllables() -> list[tuple[int, int, int]]:
-    """(cho, jung, jong) triples covering every jamo at least once."""
+    """(cho, jung, jong) triples covering every jamo in every belt (context).
+
+    Multi-belt: each 초성 is written with both a vertical and a horizontal
+    vowel; each 중성 both with and without a 받침. This captures how a jamo's
+    shape changes by context (가 vs 고 vs 강) instead of reusing one shape.
+    """
     triples: list[tuple[int, int, int]] = []
     seen: set[tuple[int, int, int]] = set()
 
@@ -67,11 +76,15 @@ def coverage_syllables() -> list[tuple[int, int, int]]:
             seen.add(key)
             triples.append(key)
 
-    for i in range(len(CHO)):          # every 초성 (with ㅏ, no 받침)
+    for i in range(len(CHO)):          # 초성 · 세로모음 벨트 (가, 까 …)
         add(i, _JUNG_A, 0)
-    for j in range(len(JUNG)):         # every 중성 (with ㅇ, no 받침)
+    for i in range(len(CHO)):          # 초성 · 가로모음 벨트 (고, 꼬 …)
+        add(i, _JUNG_O, 0)
+    for j in range(len(JUNG)):         # 중성 · 받침 없음 (아, 애 …)
         add(_CHO_O, j, 0)
-    for t in range(1, len(JONG) + 1):  # every 종성 (with 아 + 받침)
+    for j in range(len(JUNG)):         # 중성 · 받침 있음 (앙, 앵 …)
+        add(_CHO_O, j, _JONG_NG)
+    for t in range(1, len(JONG) + 1):  # 종성 (악 … 앟)
         add(_CHO_O, _JUNG_A, t)
     return triples
 

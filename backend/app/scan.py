@@ -128,12 +128,12 @@ def _render_cell(cell: np.ndarray, cell_w_px: int) -> tuple[np.ndarray, bool]:
     return out, is_blank
 
 
-def extract_cells(image_bgr: np.ndarray) -> list[ExtractedCell]:
-    """Full ingestion: align, binarize, and cut out every template cell."""
+def extract_cells(image_bgr: np.ndarray, cells: list[Cell]) -> list[ExtractedCell]:
+    """Full ingestion for ONE page: align, binarize, cut out its cells."""
     aligned = align(image_bgr)
     binary = _binarize(aligned)
 
-    boxes = layout_cells()
+    boxes = layout_cells(cells)
     # All cells share a shape; derive the fixed bitmap width from the aspect ratio.
     aspect = boxes[0].w / boxes[0].h
     cell_w_px = max(1, int(round(CELL_H * aspect)))

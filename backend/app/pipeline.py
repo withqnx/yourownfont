@@ -1,21 +1,32 @@
-"""Glue: a scanned template image in, a finished Korean font out.
+"""Glue: scanned template page(s) in, a finished Korean font out.
 
 Each written syllable block is sliced into its 초성/중성/종성 regions to extract
-jamo shapes in context; those jamo are then composed into all 11,172 syllables.
-Digit/symbol cells are mapped directly.
+jamo shapes *in context* (multi-belt: e.g. 초성 with a vertical vs horizontal
+vowel). Those jamo are then composed into all 11,172 syllables, picking the belt
+that matches each target syllable. Digit/symbol cells are mapped directly.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
-from . import hangul
+from . import hangul, template
 from .fontbuild import GlyphEntry, build_font
 from .scan import decode_image, extract_cells
 from .vectorize import vectorize_bitmap
 
 MIN_SUB_INK = 25  # min ink pixels for a sliced jamo region to count
+
+# Belt-keyed jamo stores: (jamo_index, belt) -> contours
+Store = dict[tuple[int, str], list]
+
+
+@dataclass
+class _Maps:
+    cho: Store = field(default_factory=dict)
+    jung: Store = field(default_factory=dict)
+    jong: Store = field(default_factory=dict)
 
 
 @dataclass
@@ -24,12 +35,12 @@ class BuildResult:
     total_cells: int
     filled_cells: int
     syllables: int
+    pages: int
     family: str
     fmt: str
 
 
-def _crop_frac(bitmap: np.ndarray, ink_bbox, rect):
-    """Crop a top-down fractional rect within the ink bounding box."""
+def _crop_frac(bitmap, ink_bbox, rect):
     ix0, iy0, ix1, iy1 = ink_bbox
     bw, bh = ix1 - ix0 + 1, iy1 - iy0 + 1
     fx0, fy0, fx1, fy1 = rect
@@ -41,66 +52,75 @@ def _crop_frac(bitmap: np.ndarray, ink_bbox, rect):
     return sub
 
 
-def _extract_jamo(bitmap: np.ndarray, cho: int, jung: int, jong: int,
-                  cho_map, jung_map, jong_map) -> None:
-    """Slice a written syllable and store each jamo's contours (first-wins)."""
+def _extract_jamo(bitmap, cho, jung, jong, maps: _Maps) -> None:
+    """Slice a written syllable, storing each jamo into its belt (first-wins)."""
     ys, xs = np.where(bitmap > 0)
     if len(xs) < MIN_SUB_INK:
         return
     ink_bbox = (int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max()))
     rects = hangul.extract_rects(jung, jong > 0)
 
-    def store(target: dict, idx: int, role: str) -> None:
-        if idx in target:            # first-wins: keep the earliest (cleanest) sample
+    def store(target: Store, idx: int, belt: str, role: str) -> None:
+        if (idx, belt) in target:
             return
         sub = _crop_frac(bitmap, ink_bbox, rects[role])
         if sub is None:
             return
         contours, _ = vectorize_bitmap(sub, is_blank=False)
         if contours:
-            target[idx] = contours
+            target[(idx, belt)] = contours
 
-    store(cho_map, cho, "cho")
-    store(jung_map, jung, "jung")
+    store(maps.cho, cho, hangul.cho_belt(jung), "cho")
+    store(maps.jung, jung, hangul.jung_belt(jong > 0), "jung")
     if jong > 0:
-        store(jong_map, jong - 1, "jong")
+        store(maps.jong, jong - 1, "_", "jong")
 
 
-def build_from_scan(image_bytes: bytes, family: str = "YourOwnFont",
+def _pick(store: Store, idx: int, belts: list[str]):
+    for b in belts:
+        if (idx, b) in store:
+            return store[(idx, b)]
+    return None
+
+
+def build_from_scan(images: list[bytes], family: str = "YourOwnFont",
                     fmt: str = "ttf") -> BuildResult:
-    image = decode_image(image_bytes)
-    cells = extract_cells(image)
+    if not images:
+        raise ValueError("No template pages were uploaded.")
 
-    cho_map: dict[int, list] = {}
-    jung_map: dict[int, list] = {}
-    jong_map: dict[int, list] = {}
+    pages = template.paginate()
+    maps = _Maps()
     entries: list[GlyphEntry] = []
+    total_cells = 0
     filled = 0
 
-    for ec in cells:
-        if ec.is_blank:
-            continue
-        filled += 1
-        if ec.cell.role == "syllable":
-            _extract_jamo(ec.bitmap, ec.cell.cho, ec.cell.jung, ec.cell.jong,
-                          cho_map, jung_map, jong_map)
-        elif ec.cell.role == "direct":
-            contours, advance = vectorize_bitmap(ec.bitmap, False)
-            if contours:
-                entries.append(GlyphEntry(ec.cell.name, ec.cell.codepoint,
-                                          contours, advance))
+    # Pair each uploaded image with its page's cells (in order).
+    for img_bytes, page_cells in zip(images, pages):
+        image = decode_image(img_bytes)
+        for ec in extract_cells(image, page_cells):
+            total_cells += 1
+            if ec.is_blank:
+                continue
+            filled += 1
+            if ec.cell.role == "syllable":
+                _extract_jamo(ec.bitmap, ec.cell.cho, ec.cell.jung, ec.cell.jong, maps)
+            elif ec.cell.role == "direct":
+                contours, advance = vectorize_bitmap(ec.bitmap, False)
+                if contours:
+                    entries.append(GlyphEntry(ec.cell.name, ec.cell.codepoint,
+                                              contours, advance))
 
-    # Compose every syllable whose required jamo were extracted.
+    # Compose every syllable whose jamo were captured, picking matching belts.
     syllable_count = 0
     for cp in hangul.all_syllables():
         ci, ji, ti = hangul.decompose(cp)
-        cho_c = cho_map.get(ci)
-        jung_c = jung_map.get(ji)
+        cho_c = _pick(maps.cho, ci, hangul.cho_belts(ji))
+        jung_c = _pick(maps.jung, ji, hangul.jung_belts(ti > 0))
         if not cho_c or not jung_c:
             continue
         jong_c = None
         if ti > 0:
-            jong_c = jong_map.get(ti - 1)
+            jong_c = _pick(maps.jong, ti - 1, ["_"])
             if not jong_c:
                 continue
         contours = hangul.compose_contours(cho_c, jung_c, jong_c, ji)
@@ -110,9 +130,10 @@ def build_from_scan(image_bytes: bytes, family: str = "YourOwnFont",
     font_bytes = build_font(entries, family=family, fmt=fmt)
     return BuildResult(
         font_bytes=font_bytes,
-        total_cells=len(cells),
+        total_cells=total_cells,
         filled_cells=filled,
         syllables=syllable_count,
+        pages=len(pages),
         family=family,
         fmt=fmt,
     )

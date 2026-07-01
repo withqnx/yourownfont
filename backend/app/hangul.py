@@ -45,6 +45,29 @@ def orientation(jung: int) -> str:
     return _ORIENT[jung]
 
 
+# --- Belts (문맥별 변형) --------------------------------------------------
+# A jamo is captured in more than one context so it can be placed naturally:
+#   초성 belt "V" = written with a vertical vowel (가, 거);  "H" = horizontal (고, 구)
+#   중성 belt "0" = no 받침 (가);                              "T" = with 받침 (강)
+#   종성 belt "_" = single set
+
+def cho_belt(jung: int) -> str:
+    return "V" if _ORIENT[jung] == "R" else "H"
+
+
+def jung_belt(has_jong: bool) -> str:
+    return "T" if has_jong else "0"
+
+
+# Preferred belt first, then fallbacks (used when a context wasn't written).
+def cho_belts(jung: int) -> list[str]:
+    return ["V", "H"] if _ORIENT[jung] == "R" else ["H", "V"]
+
+
+def jung_belts(has_jong: bool) -> list[str]:
+    return ["T", "0"] if has_jong else ["0", "T"]
+
+
 def zones(jung: int, has_jong: bool) -> dict[str, Box]:
     """Fractional zones (0..1 within the region) for each present component."""
     o = _ORIENT[jung]

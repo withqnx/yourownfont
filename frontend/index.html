@@ -43,7 +43,7 @@
 
   <div class="step">
     <h2><span class="num">1</span> 템플릿 내려받기 &amp; 손글씨 작성</h2>
-    <p class="muted">PDF를 인쇄한 뒤 각 칸 <b>위에 적힌 글자</b>(가, 까, 나 …)를 보고, <b>빈 칸 안에 본인 글씨로</b> 또박또박 쓰세요. 시스템이 쓴 글자에서 자모를 분석해 나머지 글자를 조합합니다. 스캔/촬영 시 네 모서리의 검은 사각형이 모두 보이게 하세요.</p>
+    <p class="muted">PDF(<b>여러 쪽</b>)를 인쇄한 뒤 각 칸 <b>위에 적힌 글자</b>(가, 고, 각 …)를 보고, <b>빈 칸 안에 본인 글씨로</b> 또박또박 쓰세요. 같은 자음도 여러 문맥(가·고·각)에서 쓰게 되어 있어, 시스템이 문맥별 모양을 학습해 나머지 글자를 조합합니다. 스캔/촬영 시 네 모서리의 검은 사각형이 모두 보이게 하고, <b>모든 쪽을 함께</b> 올리세요.</p>
     <a class="btn" href="/api/template" download>📄 템플릿 PDF 받기</a>
   </div>
 
@@ -58,8 +58,8 @@
         <option value="otf">OTF</option>
       </select>
     </div>
-    <div class="drop" id="drop">여기로 이미지를 끌어다 놓거나 클릭해 선택 (JPG/PNG)</div>
-    <input type="file" id="file" accept="image/*" class="hidden" />
+    <div class="drop" id="drop">템플릿 <b>모든 쪽</b>의 스캔 이미지를 여기로 끌어다 놓거나 클릭해 선택 (여러 장 가능, JPG/PNG)</div>
+    <input type="file" id="file" accept="image/*" multiple class="hidden" />
     <div class="row" style="margin-top:12px">
       <button id="buildBtn" disabled>폰트 만들기</button>
       <span class="muted" id="fileName"></span>
@@ -82,22 +82,26 @@ const drop = document.getElementById('drop');
 const buildBtn = document.getElementById('buildBtn');
 const fileName = document.getElementById('fileName');
 const statusEl = document.getElementById('status');
-let chosen = null;
+let chosen = [];
 
 drop.addEventListener('click', () => fileInput.click());
 ['dragover','dragenter'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
 ['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', ev => { if (ev.dataTransfer.files[0]) setFile(ev.dataTransfer.files[0]); });
-fileInput.addEventListener('change', () => { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+drop.addEventListener('drop', ev => { if (ev.dataTransfer.files.length) setFiles(ev.dataTransfer.files); });
+fileInput.addEventListener('change', () => { if (fileInput.files.length) setFiles(fileInput.files); });
 
-function setFile(f) { chosen = f; fileName.textContent = f.name; buildBtn.disabled = false; }
+function setFiles(list) {
+  chosen = Array.from(list);
+  fileName.textContent = chosen.length === 1 ? chosen[0].name : `${chosen.length}개 파일 선택됨`;
+  buildBtn.disabled = false;
+}
 
 buildBtn.addEventListener('click', async () => {
-  if (!chosen) return;
+  if (!chosen.length) return;
   buildBtn.disabled = true;
   statusEl.innerHTML = '<div class="muted">처리 중… (정렬 → 글자 추출 → 폰트 조립)</div>';
   const fd = new FormData();
-  fd.append('file', chosen);
+  chosen.forEach(f => fd.append('files', f));
   fd.append('family', document.getElementById('family').value || 'MyHandwriting');
   fd.append('fmt', document.getElementById('fmt').value);
   try {

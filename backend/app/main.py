@@ -39,16 +39,18 @@ def template() -> Response:
 
 
 @app.post("/api/build")
-async def build(file: UploadFile = File(...), family: str = Form("YourOwnFont"),
+async def build(files: list[UploadFile] = File(...),
+                family: str = Form("YourOwnFont"),
                 fmt: str = Form("ttf")) -> dict:
-    data = await file.read()
-    if not data:
+    images = [await f.read() for f in files]
+    images = [b for b in images if b]
+    if not images:
         raise HTTPException(400, "Empty upload.")
     fmt = fmt.lower()
     if fmt not in ("ttf", "otf"):
         raise HTTPException(400, "fmt must be 'ttf' or 'otf'.")
     try:
-        result = build_from_scan(data, family=family or "YourOwnFont", fmt=fmt)
+        result = build_from_scan(images, family=family or "YourOwnFont", fmt=fmt)
     except ValueError as e:
         raise HTTPException(422, str(e))
 
@@ -61,6 +63,7 @@ async def build(file: UploadFile = File(...), family: str = Form("YourOwnFont"),
         "total_cells": result.total_cells,
         "filled_cells": result.filled_cells,
         "syllables": result.syllables,
+        "pages": result.pages,
     }
 
 
