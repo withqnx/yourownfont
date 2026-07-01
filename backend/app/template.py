@@ -45,9 +45,6 @@ for _p in _KR_CANDIDATES:
         except Exception:
             continue
 
-_ROLE_HINT = {"cho": "초성", "jung": "중성", "jong": "종성", "direct": ""}
-
-
 @dataclass(frozen=True)
 class CellBox:
     cell: Cell
@@ -111,25 +108,17 @@ def generate_template_pdf() -> bytes:
     c.setFillColorRGB(0, 0, 0)
     c.setFont(_KR_FONT, 10)
     c.drawCentredString(PAGE_W / 2, PAGE_H - MARGIN + 1 * mm,
-                        "YOUROWNFONT — 각 칸 안에 글자를 또박또박 써주세요")
+                        "YOUROWNFONT — 칸 위의 글자를 보고, 빈 칸 안에 본인 글씨로 써주세요")
 
     for box in layout_cells():
-        cell = box.cell
-        c.setStrokeColorRGB(0.75, 0.75, 0.75)
-        c.setLineWidth(0.5)
+        # empty writing box (no guide inside, so handwriting isn't biased)
+        c.setStrokeColorRGB(0.7, 0.7, 0.7)
+        c.setLineWidth(0.6)
         c.rect(box.x, box.y, box.w, box.h, fill=0, stroke=1)
-        # faint guide glyph
-        c.setFillColorRGB(0.82, 0.82, 0.82)
-        size = box.h * 0.62
-        c.setFont(_KR_FONT, size)
-        c.drawCentredString(box.x + box.w / 2, box.y + box.h / 2 - size * 0.35,
-                            cell.label)
-        # label above: role hint + character
-        hint = _ROLE_HINT.get(cell.role, "")
-        label = f"{hint} {cell.label}".strip() if cell.role != "direct" else cell.label
-        c.setFillColorRGB(0.4, 0.4, 0.4)
-        c.setFont(_KR_FONT, 7)
-        c.drawString(box.x + 1 * mm, box.y + box.h + 1 * mm, label)
+        # the only cue: the target character printed above the box
+        c.setFillColorRGB(0.15, 0.15, 0.15)
+        c.setFont(_KR_FONT, 10)
+        c.drawCentredString(box.x + box.w / 2, box.y + box.h + 1.5 * mm, box.cell.label)
 
     c.showPage()
     c.save()

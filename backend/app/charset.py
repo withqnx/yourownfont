@@ -1,25 +1,24 @@
 """Character set for the handwriting template.
 
-Korean-first design. The user handwrites a small set of **cells**:
+The user handwrites whole **syllable blocks** (not isolated jamo) plus digits
+and symbols. Because we know which syllable each cell asks for, we can slice the
+written syllable into its 초성/중성/종성 regions and extract each jamo *in
+context* — a more natural way to write than drawing bare jamo. The extracted
+jamo are then composed into all 11,172 modern syllables.
 
-  * jamo components — 19 초성 (leading), 21 중성 (medial), 27 종성 (trailing).
-    These are *composed* by ``hangul.py`` into all 11,172 modern syllables, so
-    the user writes each jamo only once instead of writing every syllable.
-  * digits and punctuation — written once and mapped directly (no composition).
-
-Latin letters are intentionally excluded per project scope (Korean + digits +
-symbols only).
+The syllable list below is a *coverage set*: every 초성 (19), 중성 (21) and
+종성 (27) appears at least once, so ~67 written syllables yield every jamo.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-# 19 leading consonants (초성), in Unicode composition order.
-CHO = list("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")
-# 21 medial vowels (중성), in Unicode composition order.
-JUNG = list("ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ")
-# 27 trailing consonants (종성), in Unicode order (index 0 here = jong value 1).
-JONG = list("ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ")
+CHO = list("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")   # 19 leading
+JUNG = list("ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ")  # 21 medial
+JONG = list("ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ")  # 27 trailing
+
+_CHO_O = 11   # index of ㅇ in CHO (used as a neutral partner for coverage)
+_JUNG_A = 0   # index of ㅏ in JUNG
 
 _PUNCT_NAMES = {
     "!": "exclam", '"': "quotedbl", "#": "numbersign", "$": "dollar",
@@ -41,12 +40,40 @@ _DIGIT_NAMES = {
 class Cell:
     """One thing the user handwrites in the template grid."""
 
-    id: str          # unique key, e.g. "cho:0", "jung:8", "jong:3", "dir:0x35"
-    label: str       # what to print in the cell as a guide, e.g. "ㄱ", "5", "."
-    role: str        # "cho" | "jung" | "jong" | "direct"
-    index: int = -1  # jamo index (cho/jung/jong roles)
-    codepoint: int = -1  # unicode codepoint (direct role)
-    name: str = ""       # PostScript glyph name (direct role)
+    id: str
+    label: str            # what to print above the (empty) box
+    role: str             # "syllable" | "direct"
+    # syllable role: the jamo indices to extract from the written block
+    cho: int = -1
+    jung: int = -1
+    jong: int = -1        # 0 = no 받침 (None slot); >0 = JONG[jong-1]
+    # direct role:
+    codepoint: int = -1
+    name: str = ""
+
+
+def _syllable_cp(cho: int, jung: int, jong: int) -> int:
+    return 0xAC00 + (cho * 21 + jung) * 28 + jong
+
+
+def coverage_syllables() -> list[tuple[int, int, int]]:
+    """(cho, jung, jong) triples covering every jamo at least once."""
+    triples: list[tuple[int, int, int]] = []
+    seen: set[tuple[int, int, int]] = set()
+
+    def add(cho: int, jung: int, jong: int) -> None:
+        key = (cho, jung, jong)
+        if key not in seen:
+            seen.add(key)
+            triples.append(key)
+
+    for i in range(len(CHO)):          # every 초성 (with ㅏ, no 받침)
+        add(i, _JUNG_A, 0)
+    for j in range(len(JUNG)):         # every 중성 (with ㅇ, no 받침)
+        add(_CHO_O, j, 0)
+    for t in range(1, len(JONG) + 1):  # every 종성 (with 아 + 받침)
+        add(_CHO_O, _JUNG_A, t)
+    return triples
 
 
 def _direct_cell(ch: str) -> Cell:
@@ -61,11 +88,10 @@ def _direct_cell(ch: str) -> Cell:
 
 
 def direct_chars() -> list[str]:
-    """Digits + ASCII punctuation/symbols (letters excluded)."""
     chars: list[str] = list("0123456789")
     for cp in range(0x21, 0x7F):
         ch = chr(cp)
-        if ch.isalnum():        # skip digits (already added) and any letters
+        if ch.isalnum():
             continue
         chars.append(ch)
     return chars
@@ -74,12 +100,10 @@ def direct_chars() -> list[str]:
 def template_cells() -> list[Cell]:
     """Every cell drawn on the template, in grid order."""
     cells: list[Cell] = []
-    for i, ch in enumerate(CHO):
-        cells.append(Cell(id=f"cho:{i}", label=ch, role="cho", index=i))
-    for i, ch in enumerate(JUNG):
-        cells.append(Cell(id=f"jung:{i}", label=ch, role="jung", index=i))
-    for i, ch in enumerate(JONG):
-        cells.append(Cell(id=f"jong:{i}", label=ch, role="jong", index=i))
+    for cho, jung, jong in coverage_syllables():
+        cp = _syllable_cp(cho, jung, jong)
+        cells.append(Cell(id=f"syl:{cp:04X}", label=chr(cp), role="syllable",
+                          cho=cho, jung=jung, jong=jong))
     for ch in direct_chars():
         cells.append(_direct_cell(ch))
     return cells

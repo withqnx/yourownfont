@@ -96,6 +96,32 @@ def place_component(contours: list[list[tuple[int, int]]], frac: Box
     return out
 
 
+def extract_rects(jung: int, has_jong: bool) -> dict[str, Box]:
+    """Rectangles (top-down fractions of the ink bbox) to slice a written
+    syllable into its jamo. Tuned for extraction, so each rect isolates one
+    jamo as cleanly as a rectangle allows (compound vowels are approximate).
+
+    Box = (x0, y0, x1, y1) with y0 at the TOP (image coordinates).
+    """
+    o = _ORIENT[jung]
+    if not has_jong:
+        if o == "R":
+            return {"cho": (0.0, 0.0, 0.55, 1.0), "jung": (0.55, 0.0, 1.0, 1.0)}
+        if o == "B":
+            return {"cho": (0.0, 0.0, 1.0, 0.52), "jung": (0.0, 0.48, 1.0, 1.0)}
+        # WRAP: 초성 top-left; 중성 fills the lower-right L (approx rectangle)
+        return {"cho": (0.0, 0.0, 0.5, 0.5), "jung": (0.32, 0.12, 1.0, 1.0)}
+    # with 받침 — coverage syllables only use ㅏ (RIGHT) here
+    if o == "R":
+        return {"cho": (0.0, 0.0, 0.55, 0.66), "jung": (0.55, 0.0, 1.0, 0.66),
+                "jong": (0.0, 0.66, 1.0, 1.0)}
+    if o == "B":
+        return {"cho": (0.0, 0.0, 1.0, 0.4), "jung": (0.0, 0.4, 1.0, 0.7),
+                "jong": (0.0, 0.7, 1.0, 1.0)}
+    return {"cho": (0.0, 0.0, 0.5, 0.42), "jung": (0.32, 0.1, 1.0, 0.7),
+            "jong": (0.0, 0.7, 1.0, 1.0)}
+
+
 def decompose(codepoint: int) -> tuple[int, int, int]:
     """Syllable codepoint -> (cho, jung, jong) where jong 0 means none."""
     s = codepoint - SBASE
