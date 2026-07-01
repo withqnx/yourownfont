@@ -5,15 +5,15 @@
 코드는 이미 GitHub에 올라가 있습니다 → **https://github.com/withqnx/yourownfont** (private)
 `render.yaml` 블루프린트도 포함돼 있어, Render가 서버에서 `Dockerfile`을 빌드합니다 (로컬 Docker 불필요).
 
+저장소가 **public**이라 GitHub 로그인/연동 없이 URL만으로 배포합니다.
+
 **남은 단계 (회원님이 Render 대시보드에서 진행 — 약 2분 + 첫 빌드 5~10분):**
 
-1. https://render.com 접속 → **GitHub 계정으로 로그인** (withqnx)
-2. 우측 상단 **New +** → **Blueprint** 선택
-3. `yourownfont` 저장소 연결/승인 → Render가 `render.yaml`을 읽어 **무료 Docker 웹서비스** 생성
-4. **Apply / Create** → 빌드 시작. 끝나면 `https://yourownfont.onrender.com` 형태 URL 발급
-
-> Blueprint 메뉴가 안 보이면: **New + → Web Service → 저장소 선택 →** Runtime이 **Docker**로 자동 인식 →
-> Instance Type **Free** 선택 → Create.
+1. https://render.com → **Get Started** → **Google 또는 이메일로 가입** (GitHub 로그인 사용 금지)
+2. 대시보드 → **New +** → **Web Service**
+3. **"Public Git Repository"** 칸에 URL 붙여넣기: `https://github.com/withqnx/yourownfont`
+4. Render가 `Dockerfile` 자동 인식 → **Instance Type: Free** → **Create Web Service**
+5. 첫 빌드 완료 후 `https://yourownfont.onrender.com` 형태 URL 발급
 
 **무료 플랜 특성:** 15분간 요청이 없으면 잠들고, 다음 접속 시 콜드스타트 ~1분. 이후엔 정상 속도.
 
