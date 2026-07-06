@@ -100,9 +100,16 @@ def _abs_box(frac: Box, pad: float = 0.06) -> Box:
             RX0 + fx1 * w - px, RY0 + fy1 * h - py)
 
 
+# Cap on how much x- and y-scale may differ. The Hunmin-geometry study notes a
+# glyph's stroke width should stay constant as it is resized; anisotropic fill
+# distorts strokes, so we keep scaling near-uniform (clamp) and center the
+# component in its zone rather than stretching it to fill.
+_MAX_ANISO = 1.22
+
+
 def place_component(contours: list[list[tuple[int, int]]], frac: Box
                     ) -> list[list[tuple[int, int]]]:
-    """Scale+translate a component's contours to fill the given zone."""
+    """Scale (near-uniform, stroke-width preserving) and center into the zone."""
     if not contours:
         return []
     xs = [x for c in contours for x, _ in c]
@@ -111,12 +118,21 @@ def place_component(contours: list[list[tuple[int, int]]], frac: Box
     sw, sh = max(sx1 - sx0, 1), max(sy1 - sy0, 1)
 
     bx0, by0, bx1, by1 = _abs_box(frac)
-    kx, ky = (bx1 - bx0) / sw, (by1 - by0) / sh
+    zw, zh = bx1 - bx0, by1 - by0
+    kx, ky = zw / sw, zh / sh
+    # clamp anisotropy so strokes don't stretch (keep width ~constant)
+    if kx > ky * _MAX_ANISO:
+        kx = ky * _MAX_ANISO
+    elif ky > kx * _MAX_ANISO:
+        ky = kx * _MAX_ANISO
+    # center the scaled component within its zone
+    ox = bx0 + (zw - sw * kx) / 2
+    oy = by0 + (zh - sh * ky) / 2
 
     out: list[list[tuple[int, int]]] = []
     for c in contours:
-        out.append([(int(round(bx0 + (x - sx0) * kx)),
-                     int(round(by0 + (y - sy0) * ky))) for x, y in c])
+        out.append([(int(round(ox + (x - sx0) * kx)),
+                     int(round(oy + (y - sy0) * ky))) for x, y in c])
     return out
 
 
