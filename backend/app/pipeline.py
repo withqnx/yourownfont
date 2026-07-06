@@ -88,16 +88,18 @@ def build_from_scan(images: list[bytes], family: str = "YourOwnFont",
     if not images:
         raise ValueError("No template pages were uploaded.")
 
-    pages = template.paginate()
+    n_pages = template.num_pages()
     maps = _Maps()
     entries: list[GlyphEntry] = []
     total_cells = 0
     filled = 0
 
-    # Pair each uploaded image with its page's cells (in order).
-    for img_bytes, page_cells in zip(images, pages):
+    # Pair each uploaded image with its page's placed boxes (in order).
+    for p, img_bytes in enumerate(images):
+        if p >= n_pages:
+            break
         image = decode_image(img_bytes)
-        for ec in extract_cells(image, page_cells):
+        for ec in extract_cells(image, template.page_boxes(p)):
             total_cells += 1
             if ec.is_blank:
                 continue
@@ -133,7 +135,7 @@ def build_from_scan(images: list[bytes], family: str = "YourOwnFont",
         total_cells=total_cells,
         filled_cells=filled,
         syllables=syllable_count,
-        pages=len(pages),
+        pages=n_pages,
         family=family,
         fmt=fmt,
     )

@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 from app import scan, template  # noqa: E402
 from app.pipeline import build_from_scan  # noqa: E402
 from app.scan import SCALE  # noqa: E402
-from app.template import layout_cells, marker_centers  # noqa: E402
+from app.template import marker_centers  # noqa: E402
 
 KR_FONT = "/System/Library/Fonts/Supplemental/AppleGothic.ttf"
 
@@ -26,7 +26,7 @@ def _pt_to_px(x_pt, y_pt):
     return x_pt * SCALE, (scan.PAGE_H - y_pt) * SCALE
 
 
-def _render_page(page_cells) -> bytes:
+def _render_page(page_boxes) -> bytes:
     img = Image.new("RGB", (scan.CANON_W, scan.CANON_H), "white")
     d = ImageDraw.Draw(img)
     half = (8 * 200 / 72) / 2
@@ -34,7 +34,7 @@ def _render_page(page_cells) -> bytes:
         px, py = _pt_to_px(cx, cy)
         d.rectangle([px - half, py - half, px + half, py + half], fill="black")
 
-    for box in layout_cells(page_cells):
+    for box in page_boxes:
         ch = box.cell.label
         x0, ytop = _pt_to_px(box.x, box.y + box.h)
         w_px, h_px = box.w * SCALE, box.h * SCALE
@@ -52,7 +52,7 @@ def _render_page(page_cells) -> bytes:
 
 
 def synthesize_pages() -> list[bytes]:
-    return [_render_page(pc) for pc in template.paginate()]
+    return [_render_page(template.page_boxes(p)) for p in range(template.num_pages())]
 
 
 def test_pipeline_end_to_end():

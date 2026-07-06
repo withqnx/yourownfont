@@ -18,7 +18,7 @@ import cv2
 import numpy as np
 
 from .charset import Cell
-from .template import PAGE_H, PAGE_W, layout_cells, marker_centers
+from .template import PAGE_H, PAGE_W, marker_centers
 
 DPI = 200
 SCALE = DPI / 72.0                       # points -> canonical pixels
@@ -128,13 +128,14 @@ def _render_cell(cell: np.ndarray, cell_w_px: int) -> tuple[np.ndarray, bool]:
     return out, is_blank
 
 
-def extract_cells(image_bgr: np.ndarray, cells: list[Cell]) -> list[ExtractedCell]:
-    """Full ingestion for ONE page: align, binarize, cut out its cells."""
+def extract_cells(image_bgr: np.ndarray, boxes) -> list[ExtractedCell]:
+    """Full ingestion for ONE page: align, binarize, cut out its placed boxes."""
     aligned = align(image_bgr)
     binary = _binarize(aligned)
 
-    boxes = layout_cells(cells)
-    # All cells share a shape; derive the fixed bitmap width from the aspect ratio.
+    if not boxes:
+        return []
+    # All boxes share a shape; derive the fixed bitmap width from the aspect ratio.
     aspect = boxes[0].w / boxes[0].h
     cell_w_px = max(1, int(round(CELL_H * aspect)))
 
