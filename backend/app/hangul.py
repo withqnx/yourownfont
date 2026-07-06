@@ -78,15 +78,16 @@ def zones(jung: int, has_jong: bool) -> dict[str, Box]:
             return {"cho": (0.0, 0.44, 1.0, 1.0), "jung": (0.0, 0.0, 1.0, 0.46)}
         # WRAP
         return {"cho": (0.02, 0.46, 0.52, 1.0), "jung": (0.0, 0.0, 1.0, 1.0)}
-    # with 종성 (받침): squeeze cho/jung into the top, jong along the bottom
-    jong_box: Box = (0.0, 0.0, 1.0, 0.30)
+    # with 종성 (받침): squeeze cho/jung into the top ~76%, 종성 in bottom ~24%.
+    # The 0.76 split follows the Hunmin-geometry study's 받침 height ratio (0.756).
+    jong_box: Box = (0.0, 0.0, 1.0, 0.24)
     if o == "R":
-        return {"cho": (0.0, 0.32, 0.56, 1.0), "jung": (0.56, 0.32, 1.0, 1.0),
+        return {"cho": (0.0, 0.26, 0.56, 1.0), "jung": (0.56, 0.26, 1.0, 1.0),
                 "jong": jong_box}
     if o == "B":
-        return {"cho": (0.0, 0.66, 1.0, 1.0), "jung": (0.0, 0.32, 1.0, 0.66),
+        return {"cho": (0.0, 0.62, 1.0, 1.0), "jung": (0.0, 0.26, 1.0, 0.62),
                 "jong": jong_box}
-    return {"cho": (0.02, 0.66, 0.52, 1.0), "jung": (0.0, 0.30, 1.0, 1.0),
+    return {"cho": (0.02, 0.60, 0.52, 1.0), "jung": (0.0, 0.24, 1.0, 1.0),
             "jong": jong_box}
 
 

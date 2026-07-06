@@ -1,13 +1,14 @@
 """Character set for the handwriting template.
 
-The user handwrites whole **syllable blocks** (not isolated jamo) plus digits
-and symbols. Because we know which syllable each cell asks for, we can slice the
-written syllable into its 초성/중성/종성 regions and extract each jamo *in
-context* — a more natural way to write than drawing bare jamo. The extracted
-jamo are then composed into all 11,172 modern syllables.
+Instead of a mechanical grid of syllables, the user writes a small set of **real,
+fun words** chosen so that every 초성 appears in both a vertical- and a
+horizontal-vowel context and every 중성/종성 appears at least once. From the
+syllables of these words we extract each jamo *in context*; the rest of the
+11,172 syllables are produced by math (composition + the 받침 compression ratio
+from the Hunmin-geometry study), so the boring "받침 vowel" set is never written.
 
-The syllable list below is a *coverage set*: every 초성 (19), 중성 (21) and
-종성 (27) appears at least once, so ~67 written syllables yield every jamo.
+The word list was chosen by greedy set-cover to minimize how much is written
+while staying meaningful; ``verify_coverage`` asserts it still covers everything.
 """
 from __future__ import annotations
 
@@ -17,8 +18,16 @@ CHO = list("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")   # 19 l
 JUNG = list("ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ")  # 21 medial
 JONG = list("ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ")  # 27 trailing
 
-_CHO_O = 11   # index of ㅇ in CHO (used as a neutral partner for coverage)
-_JUNG_A = 0   # index of ㅏ in JUNG
+_VERT = set("ㅏㅐㅑㅒㅓㅔㅕㅖㅣ")  # vertical vowels -> 초성 belt "V"; others -> "H"
+
+# Minimal fun word set covering every jamo in every needed context.
+WORDS = [
+    "달빛", "꿈", "행복", "흙", "넋", "펭귄", "뼈", "뭐", "삶", "값", "숲", "집",
+    "얘", "참외", "초콜릿", "떡", "짬뽕", "포도", "귤", "토끼", "똥", "희망", "곬",
+    "늘", "밭", "낮", "키읔", "밖", "곧", "구름", "새싹", "사과", "쪽지", "돼지",
+    "궤짝", "여덟", "앉기", "핥기", "읊기", "용기", "쓰레기", "많음", "옳음", "있음",
+    "히읗", "티읕", "예술", "고양이", "다람쥐",
+]
 
 _PUNCT_NAMES = {
     "!": "exclam", '"': "quotedbl", "#": "numbersign", "$": "dollar",
@@ -41,52 +50,35 @@ class Cell:
     """One thing the user handwrites in the template grid."""
 
     id: str
-    label: str            # what to print above the (empty) box
+    label: str            # printed above the (empty) box
     role: str             # "syllable" | "direct"
-    # syllable role: the jamo indices to extract from the written block
+    word: str = ""        # source word (syllable role) for grouping/labels
     cho: int = -1
     jung: int = -1
-    jong: int = -1        # 0 = no 받침 (None slot); >0 = JONG[jong-1]
-    # direct role:
+    jong: int = -1        # 0 = no 받침
     codepoint: int = -1
     name: str = ""
 
 
-def _syllable_cp(cho: int, jung: int, jong: int) -> int:
-    return 0xAC00 + (cho * 21 + jung) * 28 + jong
+def _decompose(ch: str) -> tuple[int, int, int] | None:
+    c = ord(ch) - 0xAC00
+    if c < 0 or c > 11171:
+        return None
+    return c // (21 * 28), (c % (21 * 28)) // 28, c % 28
 
 
-_JUNG_O = 8      # index of ㅗ in JUNG (a horizontal vowel)
-_JONG_NG = 21    # jong value for ㅇ 받침 (JONG[20])
-
-
-def coverage_syllables() -> list[tuple[int, int, int]]:
-    """(cho, jung, jong) triples covering every jamo in every belt (context).
-
-    Multi-belt: each 초성 is written with both a vertical and a horizontal
-    vowel; each 중성 both with and without a 받침. This captures how a jamo's
-    shape changes by context (가 vs 고 vs 강) instead of reusing one shape.
-    """
-    triples: list[tuple[int, int, int]] = []
-    seen: set[tuple[int, int, int]] = set()
-
-    def add(cho: int, jung: int, jong: int) -> None:
-        key = (cho, jung, jong)
-        if key not in seen:
-            seen.add(key)
-            triples.append(key)
-
-    for i in range(len(CHO)):          # 초성 · 세로모음 벨트 (가, 까 …)
-        add(i, _JUNG_A, 0)
-    for i in range(len(CHO)):          # 초성 · 가로모음 벨트 (고, 꼬 …)
-        add(i, _JUNG_O, 0)
-    for j in range(len(JUNG)):         # 중성 · 받침 없음 (아, 애 …)
-        add(_CHO_O, j, 0)
-    for j in range(len(JUNG)):         # 중성 · 받침 있음 (앙, 앵 …)
-        add(_CHO_O, j, _JONG_NG)
-    for t in range(1, len(JONG) + 1):  # 종성 (악 … 앟)
-        add(_CHO_O, _JUNG_A, t)
-    return triples
+def coverage_syllables() -> list[tuple[str, str, int, int, int]]:
+    """Distinct (syllable, source_word, cho, jung, jong) from WORDS, in order."""
+    out: list[tuple[str, str, int, int, int]] = []
+    seen: set[str] = set()
+    for word in WORDS:
+        for ch in word:
+            d = _decompose(ch)
+            if d is None or ch in seen:
+                continue
+            seen.add(ch)
+            out.append((ch, word, *d))
+    return out
 
 
 def _direct_cell(ch: str) -> Cell:
@@ -113,10 +105,30 @@ def direct_chars() -> list[str]:
 def template_cells() -> list[Cell]:
     """Every cell drawn on the template, in grid order."""
     cells: list[Cell] = []
-    for cho, jung, jong in coverage_syllables():
-        cp = _syllable_cp(cho, jung, jong)
-        cells.append(Cell(id=f"syl:{cp:04X}", label=chr(cp), role="syllable",
-                          cho=cho, jung=jung, jong=jong))
+    for ch, word, cho, jung, jong in coverage_syllables():
+        cells.append(Cell(id=f"syl:{ord(ch):04X}", label=ch, role="syllable",
+                          word=word, cho=cho, jung=jung, jong=jong))
     for ch in direct_chars():
         cells.append(_direct_cell(ch))
     return cells
+
+
+def belt_of(jung: int) -> str:
+    return "V" if JUNG[jung] in _VERT else "H"
+
+
+def verify_coverage() -> set:
+    """Return the set of jamo/context requirements NOT covered by WORDS."""
+    need = set()
+    for i in range(len(CHO)):
+        need |= {("C", i, "V"), ("C", i, "H")}
+    for j in range(len(JUNG)):
+        need.add(("V", j))
+    for t in range(len(JONG)):
+        need.add(("T", t))
+    for _, _, cho, jung, jong in coverage_syllables():
+        need.discard(("C", cho, belt_of(jung)))
+        need.discard(("V", jung))
+        if jong > 0:
+            need.discard(("T", jong - 1))
+    return need

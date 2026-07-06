@@ -120,7 +120,7 @@ def generate_template_pdf() -> bytes:
         c.setFont(_KR_FONT, 10)
         c.drawCentredString(
             PAGE_W / 2, PAGE_H - MARGIN + 1 * mm,
-            f"YOUROWNFONT — 칸 위 글자를 보고 빈 칸에 본인 글씨로  ({pno}/{len(pages)}쪽)")
+            f"YOUROWNFONT — 칸 위 글자(재미있는 단어들)를 보고 빈 칸에 본인 글씨로  ({pno}/{len(pages)}쪽)")
 
         for box in layout_cells(page_cells):
             c.setStrokeColorRGB(0.7, 0.7, 0.7)
