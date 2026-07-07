@@ -5,189 +5,195 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>2026 한글날</title>
 <style>
-  @font-face { font-family:"Paperlogy"; font-weight:100; src:url("/assets/fonts/Paperlogy-1Thin.ttf") format("truetype"); font-display:swap; }
-  @font-face { font-family:"Paperlogy"; font-weight:400; src:url("/assets/fonts/Paperlogy-4Regular.ttf") format("truetype"); font-display:swap; }
-  @font-face { font-family:"Paperlogy"; font-weight:500; src:url("/assets/fonts/Paperlogy-5Medium.ttf") format("truetype"); font-display:swap; }
-  @font-face { font-family:"Paperlogy"; font-weight:700; src:url("/assets/fonts/Paperlogy-7Bold.ttf") format("truetype"); font-display:swap; }
-  @font-face { font-family:"Paperlogy"; font-weight:900; src:url("/assets/fonts/Paperlogy-9Black.ttf") format("truetype"); font-display:swap; }
+  @font-face{font-family:"Paperlogy";font-weight:100;src:url("/assets/fonts/Paperlogy-1Thin.ttf") format("truetype");font-display:swap;}
+  @font-face{font-family:"Paperlogy";font-weight:400;src:url("/assets/fonts/Paperlogy-4Regular.ttf") format("truetype");font-display:swap;}
+  @font-face{font-family:"Paperlogy";font-weight:500;src:url("/assets/fonts/Paperlogy-5Medium.ttf") format("truetype");font-display:swap;}
+  @font-face{font-family:"Paperlogy";font-weight:700;src:url("/assets/fonts/Paperlogy-7Bold.ttf") format("truetype");font-display:swap;}
+  @font-face{font-family:"Paperlogy";font-weight:900;src:url("/assets/fonts/Paperlogy-9Black.ttf") format("truetype");font-display:swap;}
+  @font-face{font-family:"OldHangul";src:url("/assets/fonts/oldhangul.woff2") format("woff2");font-display:swap;}
 
   :root{
-    --canvas:#f5f5f5; --paper:#fff; --surface:#fafafa;
-    --ink:#0a0a0a; --ink-soft:#171717; --mid:#737373; --hairline:#e5e5e5; --ember:#e7000b;
-    --r-card:24px; --r-btn:18px; --r-nested:10px;
-    --font:"Paperlogy", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    /* old-hangul (아래아·ㆆ·ㅸ 등): serif-first so the whole phrase renders in one font */
-    --old:"함초롬바탕", "HCR Batang", "AppleMyungjo", "Batang", "Noto Serif KR", "Apple SD Gothic Neo", serif;
+    --canvas:#f5f5f5;--paper:#fff;--surface:#fafafa;--ink:#0a0a0a;--ink-soft:#171717;
+    --mid:#737373;--hairline:#e5e5e5;--ember:#e7000b;--r-card:24px;--r-btn:18px;--r-nested:10px;
+    --font:"Paperlogy",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --old:"OldHangul","함초롬바탕","AppleMyungjo","Batang",serif;
   }
-  *{box-sizing:border-box; margin:0; padding:0;}
+  *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
-  body{
-    font-family:var(--font); color:var(--ink); background:var(--canvas);
-    -webkit-font-smoothing:antialiased; line-height:1.5;
-    min-height:100dvh; display:flex; align-items:center; justify-content:center;
-    padding:24px; position:relative; overflow-x:hidden;
-  }
-  /* giant faint backdrop behind the floating window */
-  .backdrop{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;}
-  .backdrop b{
-    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    font-family:var(--font); font-weight:900; font-size:min(62vw,900px); color:#ececec;
-    letter-spacing:-.05em; white-space:nowrap; user-select:none;
-  }
-  .brandmark{position:fixed; top:20px; left:24px; z-index:2; font-weight:900; font-size:14px; letter-spacing:-.02em; color:var(--ink);}
-  .brandmark i{color:var(--ember); font-style:normal;}
-
-  /* the floating window */
-  .window{
-    position:relative; z-index:1; width:100%; max-width:600px; min-height:min(78dvh,680px);
-    background:var(--paper); border:1px solid var(--hairline); border-radius:var(--r-card);
-    box-shadow:0 1px 2px rgba(0,0,0,.04), 0 12px 40px -12px rgba(0,0,0,.22), 0 0 0 1px rgba(23,23,23,.04);
-    padding:40px 40px 32px; display:flex; flex-direction:column;
-  }
-  @media(max-width:520px){ .window{padding:28px 22px; min-height:82dvh;} body{padding:12px;} }
-
-  .navrow{display:flex; align-items:center; gap:8px; min-height:28px; margin-bottom:20px;}
-  .back{background:none; border:0; color:var(--mid); font-family:var(--font); font-size:14px; cursor:pointer; padding:4px 6px; border-radius:8px;}
-  .back:hover{background:var(--canvas); color:var(--ink);}
-  .crumbs{font-size:13px; color:var(--mid);}
-  .crumbs b{color:var(--ink); font-weight:500;}
-  .spacer{flex:1;}
-
-  .body{flex:1; display:flex; flex-direction:column;}
-  .step{animation:rise .3s cubic-bezier(.2,.7,.2,1); flex:1; display:flex; flex-direction:column;}
-  @keyframes rise{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
-
-  .label{font-size:12px; letter-spacing:.08em; color:var(--mid); text-transform:uppercase; margin-bottom:14px;}
-  .display{font-weight:900; letter-spacing:-.04em; line-height:1.06; font-size:clamp(32px,7vw,50px);}
+  body{font-family:var(--font);color:var(--ink);background:var(--canvas);-webkit-font-smoothing:antialiased;
+    line-height:1.5;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;overflow-x:hidden;}
+  .backdrop{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+  .backdrop b{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--font);
+    font-weight:900;font-size:min(62vw,900px);color:#ececec;letter-spacing:-.05em;white-space:nowrap;user-select:none;}
+  .brandmark{position:fixed;top:20px;left:24px;z-index:2;font-weight:900;font-size:14px;letter-spacing:-.02em;color:var(--ink);}
+  .brandmark i{color:var(--ember);font-style:normal;}
+  .window{position:relative;z-index:1;width:100%;max-width:640px;min-height:min(78dvh,700px);background:var(--paper);
+    border:1px solid var(--hairline);border-radius:var(--r-card);
+    box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 40px -12px rgba(0,0,0,.22),0 0 0 1px rgba(23,23,23,.04);
+    padding:40px 40px 32px;display:flex;flex-direction:column;}
+  @media(max-width:560px){.window{padding:26px 20px;min-height:84dvh;}body{padding:10px;}}
+  .navrow{display:flex;align-items:center;gap:8px;min-height:28px;margin-bottom:20px;}
+  .back{background:none;border:0;color:var(--mid);font-family:var(--font);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:8px;}
+  .back:hover{background:var(--canvas);color:var(--ink);}
+  .crumbs{font-size:13px;color:var(--mid);}.crumbs b{color:var(--ink);font-weight:500;}
+  .body{flex:1;display:flex;flex-direction:column;}
+  .step{animation:rise .3s cubic-bezier(.2,.7,.2,1);flex:1;display:flex;flex-direction:column;}
+  @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .label{font-size:12px;letter-spacing:.08em;color:var(--mid);text-transform:uppercase;margin-bottom:14px;}
+  .display{font-weight:900;letter-spacing:-.04em;line-height:1.08;font-size:clamp(30px,6.5vw,46px);}
   .old{font-family:var(--old);}
-  .cover-year{font-weight:100; font-size:clamp(40px,9vw,72px); letter-spacing:-.03em; line-height:1;}
-  .cover-day{font-weight:900; font-size:clamp(64px,17vw,140px); letter-spacing:-.05em; line-height:.92;}
-  .lead{font-family:var(--old); font-size:18px; color:var(--ink-soft); line-height:1.9; margin-top:20px; word-break:keep-all;}
-  .lead .hl{border-bottom:2px solid var(--ember); padding-bottom:1px;}
-  .muted{color:var(--mid); font-size:14px;}
-
-  .btn{font-family:var(--font); font-weight:500; font-size:15px; border:0; cursor:pointer; border-radius:var(--r-btn);
-    padding:12px 20px; display:inline-flex; align-items:center; gap:8px; text-decoration:none; transition:transform .08s, background .15s;}
+  .cover-year{font-weight:100;font-size:clamp(40px,9vw,72px);letter-spacing:-.03em;line-height:1;}
+  .cover-day{font-weight:900;font-size:clamp(60px,16vw,132px);letter-spacing:-.05em;line-height:.92;}
+  .lead{font-family:var(--old);font-size:18px;color:var(--ink-soft);line-height:1.95;margin-top:18px;word-break:keep-all;}
+  .lead .hl{border-bottom:2px solid var(--ember);padding-bottom:1px;}
+  .muted{color:var(--mid);font-size:14px;}
+  .btn{font-family:var(--font);font-weight:500;font-size:15px;border:0;cursor:pointer;border-radius:var(--r-btn);
+    padding:12px 20px;display:inline-flex;align-items:center;gap:8px;text-decoration:none;transition:transform .08s,background .15s;}
   .btn:active{transform:translateY(1px);}
-  .btn.primary{background:var(--ink); color:#fafafa;} .btn.primary:hover{background:#000;}
-  .btn.ghost{background:var(--canvas); color:var(--ink);} .btn.ghost:hover{background:#ececec;}
-  .btn.lg{padding:15px 22px; font-size:16px;}
-  .btn:disabled{opacity:.45; cursor:default;}
-  .foot{margin-top:auto; padding-top:28px;}
-  .actions{display:flex; gap:10px; flex-wrap:wrap;}
-
-  .choices{display:flex; flex-direction:column; gap:12px; margin-top:8px;}
-  .choice{width:100%; text-align:left; background:var(--paper); border:1px solid var(--hairline); border-radius:var(--r-nested);
-    padding:18px 20px; cursor:pointer; transition:border-color .15s, background .15s;}
-  .choice:hover{border-color:var(--ink); background:var(--surface);}
-  .choice .ct{display:flex; align-items:baseline; justify-content:space-between; gap:12px;}
-  .choice .title{font-family:var(--old); font-weight:900; font-size:26px; letter-spacing:-.02em;}
-  .choice .num{font-size:12px; color:var(--mid);}
-  .choice .sub{color:var(--mid); font-size:13px; margin-top:5px; line-height:1.5; word-break:keep-all;}
-
-  .field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
-  .field label{font-size:13px; color:var(--mid);}
-  .input,select,textarea{font-family:var(--font); font-size:15px; color:var(--ink); background:var(--canvas);
-    border:1px solid transparent; border-radius:var(--r-btn); padding:11px 14px; outline:none; width:100%;}
-  .input:focus,select:focus,textarea:focus{border-color:var(--hairline); background:var(--paper);}
-  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
-  .subcard{background:var(--surface); border:1px solid var(--hairline); border-radius:var(--r-nested); padding:16px 18px; margin-top:8px;}
-  .drop{border:2px dashed var(--hairline); border-radius:var(--r-nested); padding:24px; text-align:center; color:var(--mid); cursor:pointer; font-size:14px;}
-  .drop.over{border-color:var(--ink); background:var(--surface);}
-  .note{margin-top:12px; padding:11px 14px; border-radius:var(--r-nested); font-size:14px;}
-  .note.ok{background:#f0fdf4; border:1px solid #bbf7d0; color:#166534;}
-  .note.err{background:#fef2f2; border:1px solid #fecaca; color:#991b1b;}
-  .note.info{background:var(--canvas); border:1px solid var(--hairline); color:var(--mid);}
-  #preview{font-size:32px; min-height:110px; border:1px dashed var(--hairline); border-radius:var(--r-nested); padding:16px; margin-top:14px; outline:none; line-height:1.6;}
-  .sagak-preview{min-height:150px; display:flex; align-items:center; justify-content:center; border:1px solid var(--hairline);
-    border-radius:var(--r-nested); background:var(--surface); margin-top:14px; font-weight:900; font-size:clamp(36px,11vw,72px); letter-spacing:-.03em; padding:16px; word-break:keep-all;}
-  .soon{display:inline-block; background:var(--ink-soft); color:#fafafa; font-size:12px; padding:3px 10px; border-radius:18px; margin-top:14px;}
+  .btn.primary{background:var(--ink);color:#fafafa;}.btn.primary:hover{background:#000;}
+  .btn.ghost{background:var(--canvas);color:var(--ink);}.btn.ghost:hover{background:#ececec;}
+  .btn.lg{padding:15px 22px;font-size:16px;}.btn:disabled{opacity:.45;cursor:default;}
+  .foot{margin-top:auto;padding-top:24px;}.actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .choices{display:flex;flex-direction:column;gap:12px;margin-top:6px;}
+  .choice{width:100%;text-align:left;background:var(--paper);border:1px solid var(--hairline);border-radius:var(--r-nested);
+    padding:18px 20px;cursor:pointer;transition:border-color .15s,background .15s;}
+  .choice:hover{border-color:var(--ink);background:var(--surface);}
+  .choice .ct{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+  .choice .title{font-family:var(--old);font-weight:900;font-size:26px;letter-spacing:-.02em;}
+  .choice .num{font-size:12px;color:var(--mid);}
+  .choice .sub{color:var(--mid);font-size:13px;margin-top:5px;line-height:1.5;word-break:keep-all;}
+  /* square infographic thumbnails */
+  .thumbs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
+  @media(max-width:560px){.thumbs{grid-template-columns:1fr;}}
+  .thumb{aspect-ratio:1/1;display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--hairline);
+    border-radius:var(--r-card);padding:20px;cursor:pointer;transition:border-color .15s,transform .1s,background .15s;}
+  .thumb:hover{border-color:var(--ink);transform:translateY(-3px);background:var(--surface);}
+  .thumb .art{flex:1;display:flex;align-items:center;justify-content:center;}
+  .thumb .tt{font-weight:900;font-size:22px;letter-spacing:-.02em;margin-top:8px;}
+  .thumb .ts{color:var(--mid);font-size:13px;margin-top:4px;line-height:1.45;word-break:keep-all;}
+  .thumb .go{color:var(--ember);font-size:13px;font-weight:700;margin-top:10px;}
+  /* 3-step strip */
+  .flow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:18px 0;}
+  .flowc{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-nested);padding:14px 10px;text-align:center;}
+  .flowc .n{width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fafafa;font-size:12px;font-weight:600;
+    display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;}
+  .flowc .t{font-size:13px;font-weight:500;line-height:1.4;word-break:keep-all;}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+  .field label{font-size:13px;color:var(--mid);}
+  .input,select,textarea{font-family:var(--font);font-size:15px;color:var(--ink);background:var(--canvas);
+    border:1px solid transparent;border-radius:var(--r-btn);padding:11px 14px;outline:none;width:100%;}
+  textarea{min-height:120px;resize:vertical;line-height:1.6;}
+  .input:focus,select:focus,textarea:focus{border-color:var(--hairline);background:var(--paper);}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .subcard{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-nested);padding:16px 18px;margin-top:8px;}
+  .drop{border:2px dashed var(--hairline);border-radius:var(--r-nested);padding:22px;text-align:center;color:var(--mid);cursor:pointer;font-size:14px;}
+  .drop.over{border-color:var(--ink);background:var(--surface);}
+  .note{margin-top:12px;padding:11px 14px;border-radius:var(--r-nested);font-size:14px;}
+  .note.ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;}
+  .note.err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;}
+  .note.info{background:var(--canvas);border:1px solid var(--hairline);color:var(--mid);}
+  #preview{font-size:30px;min-height:100px;border:1px dashed var(--hairline);border-radius:var(--r-nested);padding:16px;margin-top:14px;outline:none;line-height:1.6;}
+  .sagak-preview{min-height:140px;display:flex;align-items:center;justify-content:center;border:1px solid var(--hairline);
+    border-radius:var(--r-nested);background:var(--surface);margin-top:14px;font-weight:900;font-size:clamp(34px,10vw,64px);letter-spacing:-.03em;padding:14px;word-break:keep-all;}
+  .postlist{display:flex;flex-direction:column;gap:10px;margin-top:14px;overflow-y:auto;max-height:38dvh;padding-right:4px;}
+  .post{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-nested);padding:14px 16px;}
+  .post p{font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
+  .post .rep{margin-top:8px;font-size:12px;color:var(--mid);background:none;border:0;cursor:pointer;padding:2px 0;}
+  .post .rep:hover{color:var(--ember);}
+  .soon{display:inline-block;background:var(--ink-soft);color:#fafafa;font-size:12px;padding:3px 10px;border-radius:18px;margin-top:14px;}
+  .streak{font-weight:900;font-size:44px;letter-spacing:-.03em;}
+  svg{display:block;}
 </style>
 </head>
 <body>
-  <div class="backdrop"><b class="old">한글</b></div>
+  <div class="backdrop"><b>한글</b></div>
   <div class="brandmark">사맛디<i>.</i></div>
   <div class="window"><div class="navrow" id="nav"></div><div class="body" id="stage"></div></div>
 
 <script>
-const stage = document.getElementById('stage');
-const nav = document.getElementById('nav');
-let stack = [];
-function go(id, ctx){ stack.push({id, ctx:ctx||{}}); render(); }
-function back(){ if(stack.length>1){ stack.pop(); render(); } }
-function reset(id){ stack=[{id, ctx:{}}]; render(); }
-function cur(){ return stack[stack.length-1]; }
+const stage=document.getElementById('stage'), nav=document.getElementById('nav');
+let stack=[];
+function go(id,ctx){stack.push({id,ctx:ctx||{}});render();}
+function back(){if(stack.length>1){stack.pop();render();}}
+function reset(id){stack=[{id,ctx:{}}];render();}
+function cur(){return stack[stack.length-1];}
 function render(){
-  const {id, ctx} = cur();
-  const s = STEPS[id](ctx);
-  nav.innerHTML = (stack.length>1 ? `<button class="back" onclick="back()">←</button>` : '')
-    + `<span class="crumbs">${s.crumb||''}</span>`;
-  stage.innerHTML = '';
-  const el = document.createElement('div'); el.className='step'; el.innerHTML = s.html;
-  stage.appendChild(el);
-  if (WIRE[id]) WIRE[id](el, ctx);
+  const {id,ctx}=cur(); const s=STEPS[id](ctx);
+  nav.innerHTML=(stack.length>1?`<button class="back" onclick="back()">←</button>`:'')+`<span class="crumbs">${s.crumb||''}</span>`;
+  stage.innerHTML=''; const el=document.createElement('div'); el.className='step'; el.innerHTML=s.html;
+  stage.appendChild(el); if(WIRE[id])WIRE[id](el,ctx);
 }
+async function api(url,opts){const r=await fetch(url,opts);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||'오류');return d;}
+const esc=s=>String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
 
-const STEPS = {
-  cover: () => ({ crumb:'', html:`
-    <div style="flex:1; display:flex; flex-direction:column; justify-content:center">
-      <div class="cover-year">2026</div>
-      <div class="cover-day">한글날</div>
-      <div class="muted old" style="margin-top:22px; font-size:15px">訓民正音 반포 580年 · 가갸날 100年</div>
+// infographic SVGs (thin stroke, monochrome + ember)
+const ART={
+  font:`<svg width="120" height="120" viewBox="0 0 120 120" fill="none" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="18" y="20" width="46" height="58" rx="6"/><path d="M28 34h26M28 46h26M28 58h16"/>
+    <path d="M70 62l24 24" stroke="#e7000b"/><path d="M92 58l14 14-8 8-14-14z" fill="#fff"/>
+    <text x="82" y="44" font-family="Paperlogy" font-weight="900" font-size="30" stroke="none" fill="#0a0a0a">가</text></svg>`,
+  sagak:`<svg width="120" height="120" viewBox="0 0 120 120" fill="none" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 60h10M30 44v32M42 34v52M54 50v20" stroke="#e7000b"/>
+    <path d="M70 60h36M88 42v36" /><text x="66" y="96" font-family="Paperlogy" font-weight="900" font-size="22" stroke="none" fill="#0a0a0a">쿵</text></svg>`,
+};
+
+const STEPS={
+  cover:()=>({crumb:'',html:`
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+      <div class="cover-year">2026</div><div class="cover-day">한글날</div>
+      <div class="muted" style="margin-top:22px;font-size:15px">훈민정음 반포 580년 · 가갸날 100년</div>
     </div>
     <div class="foot"><button class="btn primary lg" onclick="go('preface')">들어가기 →</button></div>`}),
 
-  preface: () => ({ crumb:'訓民正音 언해', html:`
-    <div class="label">世宗御製 訓民正音</div>
+  preface:()=>({crumb:'세종어제 훈민정음',html:`
+    <div class="label">언해</div>
     <div class="lead old" style="margin-top:0">
-      나랏말ᄊᆞ미 中國에 달아<br>
-      文字와로 서르 <span class="hl">ᄉᆞᄆᆞᆺ디</span> 아니ᄒᆞᆯᄊᆡ<br>
-      이런 젼ᄎᆞ로 어린 百姓이 니르고져 홇 배 이셔도<br>
+      나랏말ᄊᆞ미 듕귁에 달아<br>
+      문ᄍᆞ와로 서르 <span class="hl">ᄉᆞᄆᆞᆺ디</span> 아니ᄒᆞᆯᄊᆡ<br>
+      이런 젼ᄎᆞ로 어린 ᄇᆡᆨ셩이 니르고져 홇 배 이셔도<br>
       ᄆᆞᄎᆞᆷ내 <span class="hl">제 ᄠᅳ들</span> 시러 펴디 몯ᄒᆞᇙ 노미 하니라<br>
-      내 이ᄅᆞᆯ 爲ᄒᆞ야 어엿비 너겨<br>
-      <span class="hl">날로 ᄡᅮ메 便安킈</span> ᄒᆞ고져 ᄒᆞᇙ ᄯᆞᄅᆞ미니라
+      내 이ᄅᆞᆯ 위ᄒᆞ야 어엿비 너겨<br>
+      <span class="hl">날로 ᄡᅮ메 편안킈</span> ᄒᆞ고져 ᄒᆞᇙ ᄯᆞᄅᆞ미니라
     </div>
     <div class="foot"><button class="btn primary lg" onclick="go('hub')">다음 →</button></div>`}),
 
-  hub: () => ({ crumb:'序文', html:`
-    <div class="label">세 ᄠᅳ들</div>
+  hub:()=>({crumb:'서문',html:`
+    <div class="label old">세 ᄠᅳ들</div>
     <div class="choices" style="margin-top:2px">
-      <button class="choice" onclick="go('samatdi')">
-        <div class="ct"><span class="title old">ᄉᆞᄆᆞᆺ디</span><span class="num">通 · 소통</span></div>
+      <button class="choice" onclick="go('samatdi')"><div class="ct"><span class="title old">ᄉᆞᄆᆞᆺ디</span><span class="num">소통</span></div>
         <div class="sub">소리와 문자가 통하다. 손글씨로 폰트를 만들고, 소리를 글자로 옮긴다.</div></button>
-      <button class="choice" onclick="go('jetteul')">
-        <div class="ct"><span class="title old">제 ᄠᅳ들</span><span class="num">情 · 표현</span></div>
+      <button class="choice" onclick="go('jetteul')"><div class="ct"><span class="title old">제 ᄠᅳ들</span><span class="num">표현</span></div>
         <div class="sub">마침내 제 뜻을 펴다. 익명의 공간에 하고 싶던 말을 적는다.</div></button>
-      <button class="choice" onclick="go('nallo')">
-        <div class="ct"><span class="title old">날로 ᄡᅮ메 便安킈</span><span class="num">便 · 편안</span></div>
-        <div class="sub">날로 씀에 편안케. 매일 한 글자씩 쓰는 챌린지.</div></button>
+      <button class="choice" onclick="go('nallo')"><div class="ct"><span class="title old">날로 ᄡᅮ메 편안킈</span><span class="num">편안</span></div>
+        <div class="sub">날로 씀에 편안케. 매일 한 단어씩 쓰는 챌린지.</div></button>
     </div>`}),
 
-  samatdi: () => ({ crumb:'序文 › <b class="old">ᄉᆞᄆᆞᆺ디</b>', html:`
-    <div class="label">ᄉᆞᄆᆞᆺ디 · 通</div>
-    <div class="choices">
-      <button class="choice" onclick="go('font_intro')">
-        <div class="ct"><span class="title" style="font-family:var(--font)">폰트 만들기</span><span class="num">1</span></div>
-        <div class="sub">손글씨가 진짜 폰트(.ttf/.otf)가 된다.</div></button>
-      <button class="choice" onclick="go('sagak')">
-        <div class="ct"><span class="title" style="font-family:var(--font)">사각사각</span><span class="num">2</span></div>
-        <div class="sub">의성어·의태어를 글자 카드로.</div></button>
+  // ---------- ᄉᆞᄆᆞᆺ디 : 정사각 인포그래픽 썸네일 ----------
+  samatdi:()=>({crumb:'서문 › <b class="old">ᄉᆞᄆᆞᆺ디</b>',html:`
+    <div class="label old">ᄉᆞᄆᆞᆺ디 · 소통</div>
+    <div class="thumbs">
+      <button class="thumb" onclick="go('font_intro')">
+        <div class="art">${ART.font}</div><div class="tt">폰트 만들기</div>
+        <div class="ts">내 손글씨가 진짜 폰트가 된다.</div><div class="go">만들러 가기 →</div></button>
+      <button class="thumb" onclick="go('sagak')">
+        <div class="art">${ART.sagak}</div><div class="tt">사각사각</div>
+        <div class="ts">의성어·의태어를 글자 카드로.</div><div class="go">써보러 가기 →</div></button>
     </div>`}),
 
-  font_intro: () => ({ crumb:'ᄉᆞᄆᆞᆺ디 › 폰트 만들기', html:`
-    <div class="label">1 · 템플릿</div>
-    <div class="display">손글씨 쓰기</div>
-    <p class="muted" style="margin-top:14px; line-height:1.6">단어·숫자·기호가 적힌 종이를 인쇄해 빈 칸에 쓴다. 자모를 분석해 11,172자를 만든다.</p>
-    <div class="subcard row" style="justify-content:space-between">
-      <span>템플릿 PDF</span><a class="btn primary" href="/api/template" download>받기</a>
+  font_intro:()=>({crumb:'ᄉᆞᄆᆞᆺ디 › 폰트 만들기',html:`
+    <div class="display">글씨를 써서<br>나만의 폰트를<br>만들어보세요</div>
+    <div class="flow">
+      <div class="flowc"><div class="n">1</div><div class="t">정해진 글자만<br>쓰면 됩니다</div></div>
+      <div class="flowc"><div class="n">2</div><div class="t">스캔해서<br>올리기</div></div>
+      <div class="flowc"><div class="n">3</div><div class="t">폰트<br>다운로드</div></div>
     </div>
-    <div class="foot"><button class="btn primary lg" onclick="go('font_upload')">올리기 →</button></div>`}),
+    <div class="subcard row" style="justify-content:space-between"><span>글자 템플릿 PDF</span><a class="btn primary" href="/api/template" download>받기</a></div>
+    <div class="foot"><button class="btn primary lg" onclick="go('font_upload')">다 썼어요, 올리기 →</button></div>`}),
 
-  font_upload: () => ({ crumb:'ᄉᆞᄆᆞᆺ디 › 폰트 만들기', html:`
-    <div class="label">2 · 스캔</div>
-    <div class="display">올리기</div>
+  font_upload:()=>({crumb:'ᄉᆞᄆᆞᆺ디 › 폰트 만들기',html:`
+    <div class="label">2 · 스캔 올리기</div><div class="display">올리기</div>
     <div style="margin-top:16px">
-      <div class="field"><label>이름</label><input class="input" id="family" value="내손글씨" /></div>
+      <div class="field"><label>폰트 이름</label><input class="input" id="family" value="내손글씨" /></div>
       <div class="field"><label>형식</label><select id="fmt"><option value="ttf">TTF</option><option value="otf">OTF</option></select></div>
       <div class="drop" id="drop">모든 쪽 이미지를 끌어놓거나 클릭 (여러 장)</div>
       <input type="file" id="file" accept="image/*" multiple hidden />
@@ -195,70 +201,112 @@ const STEPS = {
       <div id="status"></div>
     </div>`}),
 
-  font_result: (ctx) => ({ crumb:'ᄉᆞᄆᆞᆺ디 › 폰트 만들기', html:`
-    <div class="label">3 · 완성</div>
-    <div class="note ok">${ctx.filled}/${ctx.total}칸 · 한글 ${Number(ctx.syllables).toLocaleString()}자</div>
+  font_result:(ctx)=>({crumb:'ᄉᆞᄆᆞᆺ디 › 폰트 만들기',html:`
+    <div class="label">3 · 완성</div><div class="note ok">${ctx.filled}/${ctx.total}칸 · 한글 ${Number(ctx.syllables).toLocaleString()}자</div>
     <div id="preview" contenteditable="true" spellcheck="false">내 손글씨로 만든 한글 0123</div>
-    <div class="foot actions"><a class="btn primary lg" href="${ctx.url}" download>내려받기</a><button class="btn ghost" onclick="reset('cover')">처음으로</button></div>`}),
+    <div class="foot actions"><a class="btn primary lg" href="${ctx.url}" download>다운로드</a><button class="btn ghost" onclick="reset('cover')">처음으로</button></div>`}),
 
-  sagak: () => ({ crumb:'ᄉᆞᄆᆞᆺ디 › 사각사각', html:`
+  sagak:()=>({crumb:'ᄉᆞᄆᆞᆺ디 › 사각사각',html:`
     <div class="label">사각사각</div>
-    <div style="margin-top:2px">
-      <div class="field"><label>소리 · 모양</label><input class="input" id="onomat" maxlength="12" value="사각사각" /></div>
-      <div class="sagak-preview" id="sagakPrev">사각사각</div>
-    </div>
+    <div style="margin-top:2px"><div class="field"><label>소리 · 모양</label><input class="input" id="onomat" maxlength="12" value="사각사각" /></div>
+      <div class="sagak-preview" id="sagakPrev">사각사각</div></div>
     <div class="foot actions"><button class="btn primary" id="saveCard">카드 저장</button><button class="btn ghost" onclick="reset('cover')">처음으로</button></div>
     <canvas id="cardCanvas" width="1080" height="1080" style="display:none"></canvas>`}),
 
-  jetteul: () => ({ crumb:'序文 › <b class="old">제 ᄠᅳ들</b>', html:`
-    <div class="label">제 ᄠᅳ들 · 情</div>
-    <div class="display">하고 싶던 말</div>
-    <p class="muted" style="margin-top:14px; line-height:1.6">대나무숲과 진심. 혐오표현은 올릴 때 걸러지고, 신고된 글은 즉시 숨겨진 뒤 검토된다.</p>
-    <div class="foot"><span class="soon">다음 단계에서 열림</span></div>`}),
+  // ---------- 제 ᄠᅳ들 : 대나무숲 / 진심 ----------
+  jetteul:()=>({crumb:'서문 › <b class="old">제 ᄠᅳ들</b>',html:`
+    <div class="label old">제 ᄠᅳ들 · 표현</div>
+    <div class="choices">
+      <button class="choice" onclick="go('posts',{kind:'bamboo',name:'대나무숲'})"><div class="ct"><span class="title" style="font-family:var(--font)">대나무숲</span><span class="num">속 시원히</span></div>
+        <div class="sub">임금님 귀는 당나귀 귀 — 마음속 이야기를 외친다.</div></button>
+      <button class="choice" onclick="go('posts',{kind:'truth',name:'진심'})"><div class="ct"><span class="title" style="font-family:var(--font)">진심</span><span class="num">꾹꾹</span></div>
+        <div class="sub">누군가에게 진심을 담아, 한 자 한 자 눌러 적는다.</div></button>
+    </div>
+    <p class="muted" style="margin-top:16px;line-height:1.6">혐오·비속 표현은 등록 시 걸러지고, 신고된 글은 즉시 숨겨진 뒤 검토됩니다.</p>`}),
 
-  nallo: () => ({ crumb:'序文 › <b class="old">날로 ᄡᅮ메 便安킈</b>', html:`
-    <div class="label">날로 ᄡᅮ메 便安킈 · 便</div>
-    <div class="display">매일 한 글자</div>
-    <p class="muted" style="margin-top:14px; line-height:1.6">매일 주어진 글자를 써서 올리면 모아서 만들어 준다. 챌린지.</p>
-    <div class="foot"><span class="soon">다음 단계에서 열림</span></div>`}),
+  posts:(ctx)=>({crumb:`제 ᄠᅳ들 › ${ctx.name}`,html:`
+    <div class="label">${ctx.name}</div>
+    <div class="field"><textarea id="ptext" maxlength="1000" placeholder="여기에 적어주세요…"></textarea></div>
+    <div class="row"><button class="btn primary" id="submitPost">올리기</button><span class="muted" id="pstatus"></span></div>
+    <div class="postlist" id="plist"></div>`}),
+
+  // ---------- 날로 ᄡᅮ메 편안킈 : 챌린지 ----------
+  nallo:()=>({crumb:'서문 › <b class="old">날로 ᄡᅮ메 편안킈</b>',html:`
+    <div class="label old">날로 ᄡᅮ메 편안킈 · 챌린지</div>
+    <div class="subcard" style="text-align:center"><div class="muted">오늘의 단어</div>
+      <div class="display" id="prompt" style="font-size:clamp(30px,8vw,44px);margin-top:6px">…</div></div>
+    <div class="field" style="margin-top:16px"><label>이름</label><input class="input" id="who" placeholder="닉네임" value="" /></div>
+    <div class="field"><label>오늘의 한 줄</label><textarea id="ctext" maxlength="500" placeholder="오늘의 단어로 한 줄 써보세요…"></textarea></div>
+    <div class="row"><button class="btn primary" id="submitC">올리기</button><span class="muted" id="cstatus"></span></div>
+    <div class="postlist" id="wall"></div>`}),
+
+  admin:()=>({crumb:'관리자',html:`
+    <div class="label">관리자 · 검토 대기</div>
+    <div class="field"><label>관리자 토큰</label><input class="input" id="token" type="password" placeholder="ADMIN_TOKEN" /></div>
+    <div class="row"><button class="btn primary" id="loadQ">불러오기</button><span class="muted" id="qstatus"></span></div>
+    <div class="postlist" id="queue"></div>`}),
 };
 
-const WIRE = {
-  font_upload: (el) => {
-    const fileInput=el.querySelector('#file'), drop=el.querySelector('#drop'), buildBtn=el.querySelector('#buildBtn');
-    const fname=el.querySelector('#fname'), status=el.querySelector('#status'); let chosen=[];
-    drop.onclick=()=>fileInput.click();
+const WIRE={
+  font_upload:(el)=>{
+    const fi=el.querySelector('#file'),drop=el.querySelector('#drop'),bb=el.querySelector('#buildBtn'),fn=el.querySelector('#fname'),st=el.querySelector('#status');let ch=[];
+    drop.onclick=()=>fi.click();
     ['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over');}));
     ['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over');}));
-    drop.addEventListener('drop',ev=>{if(ev.dataTransfer.files.length)setF(ev.dataTransfer.files);});
-    fileInput.onchange=()=>{if(fileInput.files.length)setF(fileInput.files);};
-    function setF(l){chosen=[...l]; fname.textContent=chosen.length===1?chosen[0].name:`${chosen.length}개`; buildBtn.disabled=false;}
-    buildBtn.onclick=async()=>{
-      buildBtn.disabled=true; status.innerHTML='<div class="note info">처리 중…</div>';
-      const fd=new FormData(); chosen.forEach(f=>fd.append('files',f));
-      fd.append('family', el.querySelector('#family').value||'내손글씨'); fd.append('fmt', el.querySelector('#fmt').value);
-      try{ const res=await fetch('/api/build',{method:'POST',body:fd}); const d=await res.json();
-        if(!res.ok) throw new Error(d.detail||'실패');
-        go('font_result',{url:`/api/font/${d.id}`,family:d.family,filled:d.filled_cells,total:d.total_cells,syllables:d.syllables});
-      }catch(e){ status.innerHTML=`<div class="note err">⚠ ${e.message}</div>`; buildBtn.disabled=false; }
-    };
+    drop.addEventListener('drop',ev=>{if(ev.dataTransfer.files.length)sf(ev.dataTransfer.files);});
+    fi.onchange=()=>{if(fi.files.length)sf(fi.files);};
+    function sf(l){ch=[...l];fn.textContent=ch.length===1?ch[0].name:`${ch.length}개`;bb.disabled=false;}
+    bb.onclick=async()=>{bb.disabled=true;st.innerHTML='<div class="note info">처리 중…</div>';
+      const fd=new FormData();ch.forEach(f=>fd.append('files',f));fd.append('family',el.querySelector('#family').value||'내손글씨');fd.append('fmt',el.querySelector('#fmt').value);
+      try{const d=await api('/api/build',{method:'POST',body:fd});go('font_result',{url:`/api/font/${d.id}`,family:d.family,filled:d.filled_cells,total:d.total_cells,syllables:d.syllables});}
+      catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;bb.disabled=false;}};
   },
-  font_result: (el,ctx) => { const f=new FontFace(ctx.family,`url(${ctx.url})`); f.load().then(x=>{document.fonts.add(x); el.querySelector('#preview').style.fontFamily=`"${ctx.family}"`;}); },
-  sagak: (el) => {
-    const inp=el.querySelector('#onomat'), prev=el.querySelector('#sagakPrev');
-    inp.oninput=()=>{prev.textContent=inp.value||'사각사각';};
-    el.querySelector('#saveCard').onclick=async()=>{
-      const t=inp.value||'사각사각'; await document.fonts.ready;
-      const cv=el.querySelector('#cardCanvas'), c=cv.getContext('2d');
-      c.fillStyle='#0a0a0a'; c.fillRect(0,0,1080,1080); c.fillStyle='#fafafa'; c.textAlign='center'; c.textBaseline='middle';
-      let s=260; c.font=`900 ${s}px Paperlogy`; while(c.measureText(t).width>900&&s>60){s-=10;c.font=`900 ${s}px Paperlogy`;}
-      c.fillText(t,540,520); c.fillStyle='#737373'; c.font='500 30px Paperlogy'; c.fillText('사맛디 · 2026 한글날',540,960);
-      const a=document.createElement('a'); a.href=cv.toDataURL('image/png'); a.download=`${t}.png`; a.click();
-    };
+  font_result:(el,ctx)=>{const f=new FontFace(ctx.family,`url(${ctx.url})`);f.load().then(x=>{document.fonts.add(x);el.querySelector('#preview').style.fontFamily=`"${ctx.family}"`;});},
+  sagak:(el)=>{
+    const inp=el.querySelector('#onomat'),pv=el.querySelector('#sagakPrev');
+    inp.oninput=()=>{pv.textContent=inp.value||'사각사각';};
+    el.querySelector('#saveCard').onclick=async()=>{const t=inp.value||'사각사각';await document.fonts.ready;
+      const cv=el.querySelector('#cardCanvas'),c=cv.getContext('2d');c.fillStyle='#0a0a0a';c.fillRect(0,0,1080,1080);
+      c.fillStyle='#fafafa';c.textAlign='center';c.textBaseline='middle';let s=260;c.font=`900 ${s}px Paperlogy`;
+      while(c.measureText(t).width>900&&s>60){s-=10;c.font=`900 ${s}px Paperlogy`;}c.fillText(t,540,520);
+      c.fillStyle='#737373';c.font='500 30px Paperlogy';c.fillText('사맛디 · 2026 한글날',540,960);
+      const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download=`${t}.png`;a.click();};
+  },
+  posts:(el,ctx)=>{
+    const list=el.querySelector('#plist'),ta=el.querySelector('#ptext'),st=el.querySelector('#pstatus');
+    async function load(){try{const d=await api(`/api/posts/${ctx.kind}`);list.innerHTML=d.posts.map(p=>
+      `<div class="post"><p>${esc(p.text)}</p><button class="rep" onclick="reportPost(${p.id},this)">신고</button></div>`).join('')||'<div class="muted">아직 글이 없어요. 처음으로 남겨보세요.</div>';}catch(e){}}
+    el.querySelector('#submitPost').onclick=async()=>{const text=ta.value.trim();if(!text)return;
+      st.textContent='등록 중…';try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:ctx.kind,text})});
+        ta.value='';st.textContent='';load();}catch(e){st.textContent='';alert(e.message);}};
+    load();
+  },
+  nallo:(el)=>{
+    const prompt=el.querySelector('#prompt'),wall=el.querySelector('#wall'),st=el.querySelector('#cstatus');
+    api('/api/challenge/today').then(d=>{prompt.textContent=d.prompt;});
+    async function loadWall(){try{const d=await api('/api/challenge/wall');wall.innerHTML=d.entries.map(e=>
+      `<div class="post"><p><b>${esc(e.prompt)}</b> · ${esc(e.text)}</p><div class="muted" style="font-size:12px;margin-top:4px">${esc(e.who)}</div></div>`).join('')||'<div class="muted">첫 기록을 남겨보세요.</div>';}catch(e){}}
+    el.querySelector('#submitC').onclick=async()=>{const who=el.querySelector('#who').value.trim()||'익명',text=el.querySelector('#ctext').value.trim();if(!text)return;
+      st.textContent='올리는 중…';try{const d=await api('/api/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({who,text})});
+        el.querySelector('#ctext').value='';st.textContent=`🔥 ${d.streak}일째`;loadWall();}catch(e){st.textContent='';alert(e.message);}};
+    loadWall();
+  },
+  admin:(el)=>{
+    const q=el.querySelector('#queue'),st=el.querySelector('#qstatus');
+    let token='';
+    async function load(){token=el.querySelector('#token').value;st.textContent='불러오는 중…';
+      try{const d=await api(`/api/admin/queue?token=${encodeURIComponent(token)}`);st.textContent='';
+        q.innerHTML=d.queue.map(p=>`<div class="post"><p>${esc(p.text)}</p><div class="muted" style="font-size:12px;margin:4px 0">신고 ${p.reports} · ${p.kind}</div>
+          <div class="row"><button class="btn ghost" onclick="mod(${p.id},true,this)">허용</button><button class="btn ghost" style="color:var(--ember)" onclick="mod(${p.id},false,this)">삭제</button></div></div>`).join('')||'<div class="muted">검토할 글이 없습니다.</div>';}
+      catch(e){st.textContent='';alert(e.message);}}
+    window.mod=async(id,allow,btn)=>{const fd=new FormData();fd.append('allow',allow);fd.append('token',token);
+      try{await api(`/api/admin/posts/${id}/moderate`,{method:'POST',body:fd});btn.closest('.post').remove();}catch(e){alert(e.message);}};
+    el.querySelector('#loadQ').onclick=load;
   },
 };
+window.reportPost=async(id,btn)=>{if(!confirm('이 글을 신고할까요? 즉시 숨겨집니다.'))return;try{await api(`/api/posts/${id}/report`,{method:'POST'});btn.closest('.post').remove();}catch(e){alert(e.message);}};
 
-reset('cover');
+if(location.hash==='#admin') reset('admin'); else reset('cover');
 </script>
 </body>
 </html>
