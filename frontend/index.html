@@ -78,6 +78,28 @@
   .flowc .n{width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fafafa;font-size:12px;font-weight:600;
     display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px;}
   .flowc .t{font-size:13px;font-weight:500;line-height:1.4;word-break:keep-all;}
+  /* animated slide carousel */
+  .carousel{position:relative;overflow:hidden;border:1px solid var(--hairline);border-radius:var(--r-card);background:var(--surface);margin:6px 0 16px;}
+  .track{display:flex;transition:transform .55s cubic-bezier(.2,.7,.2,1);}
+  .slide{min-width:100%;padding:30px 24px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;}
+  .slide .art{height:150px;display:flex;align-items:center;justify-content:center;}
+  .slide .cap{font-weight:700;font-size:19px;letter-spacing:-.02em;}
+  .slide .ssub{color:var(--mid);font-size:13px;line-height:1.5;word-break:keep-all;}
+  .dots{display:flex;gap:7px;justify-content:center;padding-bottom:16px;}
+  .dots i{width:7px;height:7px;border-radius:50%;background:var(--hairline);cursor:pointer;transition:background .2s,width .2s;}
+  .dots i.on{background:var(--ink);width:18px;border-radius:4px;}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @keyframes flash{0%,100%{opacity:0}50%{opacity:1}}
+  .anim-bob{animation:bob 1.6s ease-in-out infinite;}
+  .anim-flash{animation:flash 1.8s ease-in-out infinite;}
+  /* pen-draws-a-square upload loader (straight strokes = "written by hand") */
+  .penwrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 0;}
+  .penload{width:92px;height:92px;overflow:visible;}
+  .pl-line{stroke-dasharray:100;stroke-dashoffset:100;animation:pldraw 1.9s linear infinite;}
+  @keyframes pldraw{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+  .pl-pen{offset-path:path('M25 25 L95 25 L95 95 L25 95 Z');offset-rotate:auto;animation:plmove 1.9s linear infinite;}
+  @keyframes plmove{from{offset-distance:0%}to{offset-distance:100%}}
+  .penmsg{color:var(--mid);font-size:14px;}
   .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
   .field label{font-size:13px;color:var(--mid);}
   .input,select,textarea{font-family:var(--font);font-size:15px;color:var(--ink);background:var(--canvas);
@@ -107,7 +129,6 @@
 </head>
 <body>
   <div class="backdrop"><b>한글</b></div>
-  <div class="brandmark">사맛디<i>.</i></div>
   <div class="window"><div class="navrow" id="nav"></div><div class="body" id="stage"></div></div>
 
 <script>
@@ -118,6 +139,7 @@ function back(){if(stack.length>1){stack.pop();render();}}
 function reset(id){stack=[{id,ctx:{}}];render();}
 function cur(){return stack[stack.length-1];}
 function render(){
+  if(window.__auto){clearInterval(window.__auto);window.__auto=null;}
   const {id,ctx}=cur(); const s=STEPS[id](ctx);
   nav.innerHTML=(stack.length>1?`<button class="back" onclick="back()">←</button>`:'')+`<span class="crumbs">${s.crumb||''}</span>`;
   stage.innerHTML=''; const el=document.createElement('div'); el.className='step'; el.innerHTML=s.html;
@@ -136,6 +158,28 @@ const ART={
     <path d="M14 60h10M30 44v32M42 34v52M54 50v20" stroke="#e7000b"/>
     <path d="M70 60h36M88 42v36" /><text x="66" y="96" font-family="Paperlogy" font-weight="900" font-size="22" stroke="none" fill="#0a0a0a">쿵</text></svg>`,
 };
+
+// pen draws a square with straight strokes = "you wrote it by hand" (upload loader)
+const PEN=`<div class="penwrap"><svg class="penload" viewBox="0 0 120 120" fill="none">
+  <path class="pl-line" d="M25 25 L95 25 L95 95 L25 95 Z" stroke="#0a0a0a" stroke-width="4" stroke-linejoin="miter" pathLength="100"/>
+  <path class="pl-pen" d="M0 0 L10 4 L4 10 Z" fill="#e7000b"/></svg><div class="penmsg">올리는 중…</div></div>`;
+
+// font-maker explainer slides (pdf → 스캔/촬영 → 업로드), animated
+const SLIDES=[
+  {cap:"① 글자 템플릿",sub:"정해진 글자만 또박또박 쓰면 됩니다",art:`
+    <svg width="150" height="150" viewBox="0 0 150 150" fill="none" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="42" y="24" width="66" height="90" rx="6"/><path d="M54 44h42M54 60h42M54 76h28"/>
+      <rect x="86" y="86" width="20" height="20" rx="3" stroke="#e7000b"/>
+      <text x="96" y="102" font-family="Paperlogy" font-weight="900" font-size="15" stroke="none" fill="#e7000b" text-anchor="middle">가</text></svg>`},
+  {cap:"② 스캔 · 촬영",sub:"다 쓴 종이를 스캔하거나 폰으로 찍어요",art:`
+    <svg width="150" height="150" viewBox="0 0 150 150" fill="none" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="46" y="30" width="58" height="90" rx="10"/><circle cx="75" cy="75" r="18"/><circle cx="75" cy="75" r="6" fill="#0a0a0a"/>
+      <path d="M75 20v-6M60 22l-3-5M90 22l3-5" stroke="#e7000b" class="anim-flash"/></svg>`},
+  {cap:"③ 업로드",sub:"올리면 11,172자 폰트가 만들어져요",art:`
+    <svg width="150" height="150" viewBox="0 0 150 150" fill="none" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M40 100v14a6 6 0 0 0 6 6h58a6 6 0 0 0 6-6v-14"/>
+      <g class="anim-bob"><path d="M75 92V40" stroke="#e7000b"/><path d="M56 60l19-20 19 20" stroke="#e7000b"/></g></svg>`},
+];
 
 const STEPS={
   cover:()=>({crumb:'',html:`
@@ -181,12 +225,11 @@ const STEPS={
     </div>`}),
 
   font_intro:()=>({crumb:'ᄉᆞᄆᆞᆺ디 › 폰트 만들기',html:`
-    <div class="display">글씨를 써서<br>나만의 폰트를<br>만들어보세요</div>
-    <div class="flow">
-      <div class="flowc"><div class="n">1</div><div class="t">정해진 글자만<br>쓰면 됩니다</div></div>
-      <div class="flowc"><div class="n">2</div><div class="t">스캔해서<br>올리기</div></div>
-      <div class="flowc"><div class="n">3</div><div class="t">폰트<br>다운로드</div></div>
-    </div>
+    <div class="label">폰트 만들기 · 이렇게 진행돼요</div>
+    <div class="carousel"><div class="track" id="track">
+      ${SLIDES.map(s=>`<div class="slide"><div class="art">${s.art}</div><div class="cap">${s.cap}</div><div class="ssub">${s.sub}</div></div>`).join('')}
+    </div></div>
+    <div class="dots" id="dots">${SLIDES.map((_,i)=>`<i data-i="${i}" class="${i===0?'on':''}"></i>`).join('')}</div>
     <div class="subcard row" style="justify-content:space-between"><span>글자 템플릿 PDF</span><a class="btn primary" href="/api/template" download>받기</a></div>
     <div class="foot"><button class="btn primary lg" onclick="go('font_upload')">다 썼어요, 올리기 →</button></div>`}),
 
@@ -248,6 +291,12 @@ const STEPS={
 };
 
 const WIRE={
+  font_intro:(el)=>{
+    const track=el.querySelector('#track'), dots=[...el.querySelectorAll('#dots i')]; let i=0;
+    function show(n){i=(n+SLIDES.length)%SLIDES.length; track.style.transform=`translateX(-${i*100}%)`; dots.forEach((d,k)=>d.classList.toggle('on',k===i));}
+    dots.forEach(d=>d.onclick=()=>{show(+d.dataset.i); window.__auto&&clearInterval(window.__auto); window.__auto=setInterval(()=>show(i+1),2600);});
+    window.__auto=setInterval(()=>show(i+1),2600);
+  },
   font_upload:(el)=>{
     const fi=el.querySelector('#file'),drop=el.querySelector('#drop'),bb=el.querySelector('#buildBtn'),fn=el.querySelector('#fname'),st=el.querySelector('#status');let ch=[];
     drop.onclick=()=>fi.click();
@@ -256,7 +305,7 @@ const WIRE={
     drop.addEventListener('drop',ev=>{if(ev.dataTransfer.files.length)sf(ev.dataTransfer.files);});
     fi.onchange=()=>{if(fi.files.length)sf(fi.files);};
     function sf(l){ch=[...l];fn.textContent=ch.length===1?ch[0].name:`${ch.length}개`;bb.disabled=false;}
-    bb.onclick=async()=>{bb.disabled=true;st.innerHTML='<div class="note info">처리 중…</div>';
+    bb.onclick=async()=>{bb.disabled=true;st.innerHTML=PEN;
       const fd=new FormData();ch.forEach(f=>fd.append('files',f));fd.append('family',el.querySelector('#family').value||'내손글씨');fd.append('fmt',el.querySelector('#fmt').value);
       try{const d=await api('/api/build',{method:'POST',body:fd});go('font_result',{url:`/api/font/${d.id}`,family:d.family,filled:d.filled_cells,total:d.total_cells,syllables:d.syllables});}
       catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;bb.disabled=false;}};
