@@ -2,131 +2,332 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>YourOwnFont — 손글씨로 폰트 만들기</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>사맛디 — 한글날 2026</title>
 <style>
-  :root { --fg:#1a1a1a; --muted:#6b7280; --line:#e5e7eb; --accent:#4f46e5; --bg:#fafafa; }
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-         color: var(--fg); background: var(--bg); margin: 0; line-height: 1.5; }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 40px 20px 80px; }
-  h1 { font-size: 1.7rem; margin: 0 0 4px; }
-  .sub { color: var(--muted); margin: 0 0 32px; }
-  .step { background: #fff; border: 1px solid var(--line); border-radius: 12px;
-          padding: 20px 22px; margin-bottom: 18px; }
-  .step h2 { font-size: 1.05rem; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
-  .num { background: var(--accent); color: #fff; width: 24px; height: 24px; border-radius: 50%;
-         display: inline-flex; align-items: center; justify-content: center; font-size: .85rem; }
-  button, .btn { font: inherit; border: 0; border-radius: 8px; padding: 10px 16px; cursor: pointer;
-                 background: var(--accent); color: #fff; text-decoration: none; display: inline-block; }
-  button:disabled { opacity: .5; cursor: default; }
-  .ghost { background: #fff; border: 1px solid var(--line); color: var(--fg); }
-  input[type=text] { font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; width: 220px; }
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .muted { color: var(--muted); font-size: .9rem; }
-  #preview { font-size: 40px; min-height: 120px; border: 1px dashed var(--line); border-radius: 8px;
-             padding: 16px; margin-top: 12px; outline: none; }
-  .hidden { display: none; }
-  .stat { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 8px 12px;
-          border-radius: 8px; font-size: .9rem; margin-top: 12px; }
-  .err { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 8px 12px;
-         border-radius: 8px; font-size: .9rem; margin-top: 12px; }
-  .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 24px; text-align: center;
-          color: var(--muted); cursor: pointer; }
-  .drop.over { border-color: var(--accent); background: #f5f3ff; }
+  @font-face { font-family:"Paperlogy"; font-weight:100; src:url("/assets/fonts/Paperlogy-1Thin.ttf") format("truetype"); font-display:swap; }
+  @font-face { font-family:"Paperlogy"; font-weight:400; src:url("/assets/fonts/Paperlogy-4Regular.ttf") format("truetype"); font-display:swap; }
+  @font-face { font-family:"Paperlogy"; font-weight:500; src:url("/assets/fonts/Paperlogy-5Medium.ttf") format("truetype"); font-display:swap; }
+  @font-face { font-family:"Paperlogy"; font-weight:700; src:url("/assets/fonts/Paperlogy-7Bold.ttf") format("truetype"); font-display:swap; }
+  @font-face { font-family:"Paperlogy"; font-weight:900; src:url("/assets/fonts/Paperlogy-9Black.ttf") format("truetype"); font-display:swap; }
+
+  :root{
+    --canvas:#f5f5f5; --paper:#fff; --surface:#fafafa;
+    --ink:#0a0a0a; --ink-soft:#171717; --mid:#737373; --hairline:#e5e5e5; --ember:#e7000b;
+    --r-card:24px; --r-btn:18px; --r-nested:10px;
+    --font:"Paperlogy", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --shadow:0 0 0 1px rgba(23,23,23,.05), 0 1px 3px rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:var(--font); background:var(--canvas); color:var(--ink);
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+    display:flex; flex-direction:column; min-height:100dvh;
+  }
+  /* top bar */
+  .topbar{display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; border-bottom:1px solid var(--hairline); background:var(--surface);}
+  .brand{font-weight:900; letter-spacing:-.03em; font-size:16px;}
+  .brand .dot{color:var(--ember);}
+  .anniv{font-size:12px; color:var(--mid); letter-spacing:.02em;}
+  .anniv b{color:var(--ink); font-weight:700;}
+
+  /* stage: one step at a time, centered */
+  .wrap{flex:1; display:flex; justify-content:center; align-items:flex-start; padding:32px 20px 80px;}
+  .stage{width:100%; max-width:640px;}
+  .step{animation:rise .32s cubic-bezier(.2,.7,.2,1);}
+  @keyframes rise{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:none;}}
+
+  .kicker{font-size:12px; letter-spacing:.08em; color:var(--mid); text-transform:uppercase; margin-bottom:14px;}
+  .display{font-weight:900; letter-spacing:-.04em; line-height:1.08; font-size:clamp(34px,7vw,52px);}
+  .display.thin{font-weight:100;}
+  .lead{font-size:17px; color:var(--ink-soft); line-height:1.7; margin-top:18px;}
+  .lead .hl{font-weight:700; border-bottom:2px solid var(--ember); padding-bottom:1px;}
+  .muted{color:var(--mid); font-size:14px;}
+
+  /* buttons */
+  .btn{font-family:var(--font); font-weight:500; font-size:15px; border:0; cursor:pointer;
+    border-radius:var(--r-btn); padding:12px 20px; display:inline-flex; align-items:center; gap:8px;
+    text-decoration:none; transition:transform .08s, background .15s, opacity .15s;}
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--ink); color:#fafafa;}
+  .btn.primary:hover{background:#000;}
+  .btn.ghost{background:var(--canvas); color:var(--ink);}
+  .btn.ghost:hover{background:#ececec;}
+  .btn.outline{background:transparent; color:var(--ink); border:1px solid var(--hairline);}
+  .btn.outline:hover{background:var(--surface);}
+  .btn:disabled{opacity:.45; cursor:default;}
+  .btn.block{width:100%; justify-content:center;}
+  .btn.lg{padding:16px 22px; font-size:16px;}
+
+  .actions{display:flex; gap:10px; margin-top:32px; flex-wrap:wrap;}
+
+  /* choice cards (the 3 buttons / 2 options) */
+  .choices{display:flex; flex-direction:column; gap:12px; margin-top:28px;}
+  .choice{width:100%; text-align:left; background:var(--paper); border:1px solid var(--hairline);
+    border-radius:var(--r-card); padding:20px 22px; cursor:pointer; box-shadow:var(--shadow);
+    transition:transform .1s, border-color .15s;}
+  .choice:hover{transform:translateY(-2px); border-color:#d4d4d4;}
+  .choice:active{transform:translateY(0);}
+  .choice .ct{display:flex; align-items:baseline; justify-content:space-between; gap:12px;}
+  .choice .title{font-weight:900; font-size:26px; letter-spacing:-.03em;}
+  .choice .num{font-size:12px; color:var(--mid); font-weight:500;}
+  .choice .sub{color:var(--mid); font-size:14px; margin-top:6px; line-height:1.5;}
+  .choice .arch{color:var(--ember); font-weight:700; font-size:13px;}
+
+  /* back / progress row */
+  .navrow{display:flex; align-items:center; gap:10px; margin-bottom:22px; min-height:32px;}
+  .back{background:none; border:0; color:var(--mid); font-family:var(--font); font-size:14px;
+    cursor:pointer; padding:6px 8px; border-radius:10px; display:inline-flex; align-items:center; gap:6px;}
+  .back:hover{background:var(--canvas); color:var(--ink);}
+  .crumbs{font-size:13px; color:var(--mid);}
+  .crumbs b{color:var(--ink); font-weight:500;}
+
+  /* card + fields */
+  .card{background:var(--paper); border:1px solid var(--hairline); border-radius:var(--r-card);
+    box-shadow:var(--shadow); padding:22px; margin-top:22px;}
+  .field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
+  .field label{font-size:13px; color:var(--mid); font-weight:500;}
+  .input, select, textarea{font-family:var(--font); font-size:15px; color:var(--ink);
+    background:var(--canvas); border:1px solid transparent; border-radius:var(--r-btn);
+    padding:11px 14px; outline:none; width:100%;}
+  .input:focus, select:focus, textarea:focus{border-color:var(--hairline); background:var(--paper);}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .drop{border:2px dashed var(--hairline); border-radius:var(--r-nested); padding:26px; text-align:center;
+    color:var(--mid); cursor:pointer; font-size:14px;}
+  .drop.over{border-color:var(--ink); background:var(--surface);}
+  .note{margin-top:14px; padding:12px 14px; border-radius:var(--r-nested); font-size:14px;}
+  .note.ok{background:#f0fdf4; border:1px solid #bbf7d0; color:#166534;}
+  .note.err{background:#fef2f2; border:1px solid #fecaca; color:#991b1b;}
+  .note.info{background:var(--surface); border:1px solid var(--hairline); color:var(--mid);}
+  .steps-dots{display:flex; gap:6px; margin-left:auto;}
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--hairline);}
+  .dot.on{background:var(--ink);}
+
+  #preview{font-size:34px; min-height:120px; border:1px dashed var(--hairline); border-radius:var(--r-nested);
+    padding:18px; margin-top:14px; outline:none; line-height:1.6;}
+  .sagak-preview{min-height:180px; display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--hairline); border-radius:var(--r-card); background:var(--paper); margin-top:16px;
+    font-weight:900; font-size:clamp(40px,12vw,86px); letter-spacing:-.03em; text-align:center; padding:20px; word-break:keep-all;}
+  .soon{display:inline-block; background:#171717; color:#fafafa; font-size:12px; font-weight:500;
+    padding:3px 10px; border-radius:18px; margin-top:16px;}
+  .footnote{margin-top:40px; font-size:12px; color:var(--mid); letter-spacing:.02em; text-align:center;}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>YourOwnFont ✍️</h1>
-  <p class="sub">손글씨를 나만의 한글 폰트로 — 안내된 <b>재미있는 단어</b>(달빛·꿈·행복·닭·값 …)와 숫자·기호만 쓰면, 시스템이 자모를 문맥별로 분석하고 나머지는 수학으로 계산해 11,172자 전부를 만들어 드립니다.</p>
-
-  <div class="step">
-    <h2><span class="num">1</span> 템플릿 내려받기 &amp; 손글씨 작성</h2>
-    <p class="muted">PDF(<b>여러 쪽</b>)를 인쇄한 뒤 각 칸 <b>위에 적힌 글자</b>(가, 고, 각 …)를 보고, <b>빈 칸 안에 본인 글씨로</b> 또박또박 쓰세요. 같은 자음도 여러 문맥(가·고·각)에서 쓰게 되어 있어, 시스템이 문맥별 모양을 학습해 나머지 글자를 조합합니다. 스캔/촬영 시 네 모서리의 검은 사각형이 모두 보이게 하고, <b>모든 쪽을 함께</b> 올리세요.</p>
-    <a class="btn" href="/api/template" download>📄 템플릿 PDF 받기</a>
+  <div class="topbar">
+    <div class="brand">사맛디<span class="dot">.</span></div>
+    <div class="anniv">훈민정음 반포 <b>580년</b> · 가갸날 <b>100년</b> · 2026</div>
   </div>
-
-  <div class="step">
-    <h2><span class="num">2</span> 스캔본 업로드</h2>
-    <div class="row" style="margin-bottom:12px">
-      <label class="muted">폰트 이름</label>
-      <input type="text" id="family" value="MyHandwriting" />
-      <label class="muted">형식</label>
-      <select id="fmt" style="font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:8px">
-        <option value="ttf">TTF</option>
-        <option value="otf">OTF</option>
-      </select>
-    </div>
-    <div class="drop" id="drop">템플릿 <b>모든 쪽</b>의 스캔 이미지를 여기로 끌어다 놓거나 클릭해 선택 (여러 장 가능, JPG/PNG)</div>
-    <input type="file" id="file" accept="image/*" multiple class="hidden" />
-    <div class="row" style="margin-top:12px">
-      <button id="buildBtn" disabled>폰트 만들기</button>
-      <span class="muted" id="fileName"></span>
-    </div>
-    <div id="status"></div>
-  </div>
-
-  <div class="step hidden" id="resultStep">
-    <h2><span class="num">3</span> 미리보기 &amp; 내려받기</h2>
-    <div class="row">
-      <a class="btn" id="downloadBtn" href="#" download>⬇️ 폰트 내려받기 (.ttf)</a>
-    </div>
-    <div id="preview" contenteditable="true" spellcheck="false">내 손글씨로 만든 한글 폰트 0123 — 직접 입력해 보세요!</div>
-  </div>
-</div>
+  <div class="wrap"><div class="stage" id="stage"></div></div>
 
 <script>
-const fileInput = document.getElementById('file');
-const drop = document.getElementById('drop');
-const buildBtn = document.getElementById('buildBtn');
-const fileName = document.getElementById('fileName');
-const statusEl = document.getElementById('status');
-let chosen = [];
-
-drop.addEventListener('click', () => fileInput.click());
-['dragover','dragenter'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('over'); }));
-['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', ev => { if (ev.dataTransfer.files.length) setFiles(ev.dataTransfer.files); });
-fileInput.addEventListener('change', () => { if (fileInput.files.length) setFiles(fileInput.files); });
-
-function setFiles(list) {
-  chosen = Array.from(list);
-  fileName.textContent = chosen.length === 1 ? chosen[0].name : `${chosen.length}개 파일 선택됨`;
-  buildBtn.disabled = false;
+// ---- tiny step router (survey style, one screen at a time, back-navigable) ----
+const stage = document.getElementById('stage');
+let stack = [];
+function go(id, ctx){ stack.push({id, ctx: ctx||{}}); render(); }
+function back(){ if(stack.length>1){ stack.pop(); render(); } }
+function reset(id){ stack=[{id, ctx:{}}]; render(); }
+function cur(){ return stack[stack.length-1]; }
+function render(){
+  const {id, ctx} = cur();
+  stage.innerHTML = '';
+  const el = document.createElement('div');
+  el.className = 'step';
+  el.innerHTML = STEPS[id](ctx);
+  stage.appendChild(el);
+  if (WIRE[id]) WIRE[id](el, ctx);
+  window.scrollTo({top:0, behavior:'instant'});
+}
+function navbar(crumb){
+  const b = stack.length>1 ? `<button class="back" onclick="back()">← 뒤로</button>` : '';
+  return `<div class="navrow">${b}<span class="crumbs">${crumb||''}</span></div>`;
 }
 
-buildBtn.addEventListener('click', async () => {
-  if (!chosen.length) return;
-  buildBtn.disabled = true;
-  statusEl.innerHTML = '<div class="muted">처리 중… (정렬 → 글자 추출 → 폰트 조립)</div>';
-  const fd = new FormData();
-  chosen.forEach(f => fd.append('files', f));
-  fd.append('family', document.getElementById('family').value || 'MyHandwriting');
-  fd.append('fmt', document.getElementById('fmt').value);
-  try {
-    const res = await fetch('/api/build', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || '처리 실패');
-    statusEl.innerHTML = `<div class="stat">✓ ${data.filled_cells}/${data.total_cells}칸 인식 → 한글 ${data.syllables.toLocaleString()}자를 조합했습니다.</div>`;
-    showResult(data.id, data.family);
-  } catch (e) {
-    statusEl.innerHTML = `<div class="err">⚠ ${e.message}</div>`;
-  } finally {
-    buildBtn.disabled = false;
-  }
-});
+// ---------------------------- SCREENS ----------------------------
+const STEPS = {
 
-function showResult(id, family) {
-  const url = `/api/font/${id}`;
-  const face = new FontFace(family, `url(${url})`);
-  face.load().then(f => {
-    document.fonts.add(f);
-    document.getElementById('preview').style.fontFamily = `"${family}"`;
-  });
-  document.getElementById('downloadBtn').href = url;
-  document.getElementById('resultStep').classList.remove('hidden');
-}
+  intro: () => `
+    ${navbar('')}
+    <div class="kicker">訓民正音 · 언해본 서문</div>
+    <div class="display">나랏말이<br>중국과 달라</div>
+    <p class="lead">
+      서로 <span class="hl">사맛디</span> 아니하매,<br>
+      마침내 <span class="hl">제 뜯</span>을 펴지 못하는 이 많으니라.<br>
+      내 이를 어여삐 여겨 — <span class="hl">날로 씀에 편안케</span> 하고자 할 따름이니라.
+    </p>
+    <p class="muted" style="margin-top:22px">580년 전의 그 마음을, 오늘 당신의 손글씨로.</p>
+    <div class="actions"><button class="btn primary lg" onclick="go('hub')">시작하기 →</button></div>
+    <div class="footnote">1446 훈민정음 반포 · 1926 가갸날 · 2026 한글날</div>`,
+
+  hub: () => `
+    ${navbar('서문')}
+    <div class="kicker">세 가지 뜻 — 하나를 고르세요</div>
+    <div class="display" style="font-size:clamp(28px,6vw,40px)">무엇을 해볼까요?</div>
+    <div class="choices">
+      <button class="choice" onclick="go('samatdi')">
+        <div class="ct"><span class="title">사맛디</span><span class="num">소통 · 通</span></div>
+        <div class="sub">소리와 문자가 통하다. 내 손글씨로 나만의 폰트를 만들고, 소리를 글자로 바꿔봅니다.</div>
+      </button>
+      <button class="choice" onclick="go('jetteul')">
+        <div class="ct"><span class="title">마참네 제 뜨들</span><span class="num">표현 · 情</span></div>
+        <div class="sub">마침내 제 뜻을 펴다. 익명의 공간에 진짜 하고 싶었던 말을 꾹꾹 눌러 적습니다.</div>
+      </button>
+      <button class="choice" onclick="go('nallo')">
+        <div class="ct"><span class="title">날로 쑤메 뻔한킈</span><span class="num">편안 · 便</span></div>
+        <div class="sub">날로 씀에 편안케. 매일 한 글자씩 쓰는 챌린지로, 나의 기록을 쌓아갑니다.</div>
+      </button>
+    </div>`,
+
+  samatdi: () => `
+    ${navbar('서문 › <b>사맛디</b>')}
+    <div class="kicker">사맛디 · 소리와 문자가 통하다</div>
+    <div class="display" style="font-size:clamp(28px,6vw,40px)">두 가지 중에서</div>
+    <div class="choices">
+      <button class="choice" onclick="go('font_intro')">
+        <div class="ct"><span class="title">폰트 만들기</span><span class="num">1</span></div>
+        <div class="sub">아날로그와 디지털이 통한다. 종이에 쓴 내 손글씨가 진짜 폰트(.ttf/.otf)가 됩니다.</div>
+      </button>
+      <button class="choice" onclick="go('sagak')">
+        <div class="ct"><span class="title">사각사각</span><span class="num">2</span></div>
+        <div class="sub">소리가 글자가 되다. 사각사각·쿵쿵… 의성어·의태어를 나만의 글자 카드로.</div>
+      </button>
+    </div>`,
+
+  // ---- 사맛디 1: 폰트 만들기 ----
+  font_intro: () => `
+    ${navbar('사맛디 › <b>폰트 만들기</b>')}
+    <div class="kicker">1단계 · 템플릿 받기</div>
+    <div class="display" style="font-size:clamp(26px,5.5vw,38px)">먼저,<br>템플릿에 손글씨를</div>
+    <p class="lead">재미있는 단어(달빛·꿈·행복 …)와 숫자·기호가 적힌 종이를 인쇄해, <b>빈 칸에 본인 글씨로</b> 또박또박 씁니다. 자모를 문맥별로 분석해 <b>11,172자 전부</b>를 만들어 드립니다.</p>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div><div style="font-weight:700">템플릿 PDF</div><div class="muted">인쇄 → 손글씨 → 스캔/촬영</div></div>
+        <a class="btn primary" href="/api/template" download>📄 받기</a>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn primary lg" onclick="go('font_upload')">다 썼어요, 올리기 →</button>
+    </div>`,
+
+  font_upload: () => `
+    ${navbar('사맛디 › 폰트 만들기')}
+    <div class="kicker">2단계 · 스캔 올리기</div>
+    <div class="display" style="font-size:clamp(26px,5.5vw,38px)">스캔본을 올려주세요</div>
+    <div class="card">
+      <div class="field"><label>폰트 이름</label><input class="input" id="family" value="내손글씨" /></div>
+      <div class="field"><label>형식</label>
+        <select id="fmt"><option value="ttf">TTF</option><option value="otf">OTF</option></select></div>
+      <div class="drop" id="drop">템플릿 <b>모든 쪽</b>의 이미지를 끌어다 놓거나 클릭 (여러 장, JPG/PNG)</div>
+      <input type="file" id="file" accept="image/*" multiple hidden />
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="buildBtn" disabled>폰트 만들기</button>
+        <span class="muted" id="fname"></span>
+      </div>
+      <div id="status"></div>
+    </div>`,
+
+  font_result: (ctx) => `
+    ${navbar('사맛디 › 폰트 만들기')}
+    <div class="kicker">3단계 · 완성</div>
+    <div class="display" style="font-size:clamp(26px,5.5vw,38px)">내 폰트가 완성됐어요</div>
+    <div class="note ok">✓ ${ctx.filled}/${ctx.total}칸 인식 → 한글 ${Number(ctx.syllables).toLocaleString()}자 조합 완료</div>
+    <div id="preview" contenteditable="true" spellcheck="false">내 손글씨로 만든 한글 폰트 0123 — 직접 입력해 보세요!</div>
+    <div class="actions">
+      <a class="btn primary lg" id="dl" href="${ctx.url}" download>⬇️ 폰트 내려받기</a>
+      <button class="btn ghost" onclick="reset('hub')">처음으로</button>
+    </div>`,
+
+  // ---- 사맛디 2: 사각사각 ----
+  sagak: () => `
+    ${navbar('사맛디 › <b>사각사각</b>')}
+    <div class="kicker">사각사각 · 소리가 글자가 되다</div>
+    <div class="display" style="font-size:clamp(26px,5.5vw,38px)">어떤 소리를<br>글자로 담을까요?</div>
+    <p class="lead">사각사각, 쿵쿵, 반짝… 마음에 든 <b>의성어·의태어</b>를 적으면 나만의 글자 카드로 만들어 드려요.</p>
+    <div class="card">
+      <div class="field"><label>소리 / 모양</label>
+        <input class="input" id="onomat" maxlength="12" placeholder="예: 사각사각" value="사각사각" /></div>
+      <div class="sagak-preview" id="sagakPrev">사각사각</div>
+      <div class="actions" style="margin-top:18px">
+        <button class="btn primary" id="saveCard">카드 이미지 저장</button>
+        <button class="btn ghost" onclick="reset('hub')">처음으로</button>
+      </div>
+    </div>
+    <canvas id="cardCanvas" width="1080" height="1080" style="display:none"></canvas>`,
+
+  // ---- 마참네 제 뜨들 (Phase 2) ----
+  jetteul: () => `
+    ${navbar('서문 › <b>마참네 제 뜨들</b>')}
+    <div class="kicker">마참내 제 뜯 · 마침내 제 뜻을 펴다</div>
+    <div class="display" style="font-size:clamp(28px,6vw,40px)">내가 진짜<br>하고 싶은 말</div>
+    <p class="lead">한글은 비로소 내 뜻을 글자로 펴게 해준 도구. 익명의 공간, <b>대나무숲</b>과 <b>진심</b>에 속 시원히 적어보세요.</p>
+    <p class="muted" style="margin-top:14px">혐오표현은 올릴 때 걸러지고, 신고된 글은 즉시 숨겨진 뒤 검토됩니다.</p>
+    <span class="soon">다음 단계에서 열립니다</span>
+    <div class="actions"><button class="btn ghost" onclick="back()">← 다른 뜻 보기</button></div>`,
+
+  // ---- 날로 쑤메 뻔한킈 (Phase 2) ----
+  nallo: () => `
+    ${navbar('서문 › <b>날로 쑤메 뻔한킈</b>')}
+    <div class="kicker">날로 씀에 便安킈 · 쓰기 편하게</div>
+    <div class="display" style="font-size:clamp(28px,6vw,40px)">매일 한 글자,<br>쌓이는 나의 기록</div>
+    <p class="lead">매일 주어지는 한 글자를 써서 올리면, 모아서 <b>나만의 무언가</b>로 만들어 드리는 챌린지예요.</p>
+    <span class="soon">다음 단계에서 열립니다</span>
+    <div class="actions"><button class="btn ghost" onclick="back()">← 다른 뜻 보기</button></div>`,
+};
+
+// ---------------------------- WIRING ----------------------------
+const WIRE = {
+  font_upload: (el) => {
+    const fileInput = el.querySelector('#file'), drop = el.querySelector('#drop');
+    const buildBtn = el.querySelector('#buildBtn'), fname = el.querySelector('#fname');
+    const status = el.querySelector('#status'); let chosen = [];
+    drop.onclick = () => fileInput.click();
+    ['dragover','dragenter'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over');}));
+    ['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over');}));
+    drop.addEventListener('drop', ev=>{ if(ev.dataTransfer.files.length) setF(ev.dataTransfer.files); });
+    fileInput.onchange = () => { if(fileInput.files.length) setF(fileInput.files); };
+    function setF(list){ chosen=[...list]; fname.textContent = chosen.length===1?chosen[0].name:`${chosen.length}개 선택됨`; buildBtn.disabled=false; }
+    buildBtn.onclick = async () => {
+      buildBtn.disabled=true;
+      status.innerHTML = '<div class="note info">처리 중… (정렬 → 글자 추출 → 조합)</div>';
+      const fd = new FormData();
+      chosen.forEach(f=>fd.append('files', f));
+      fd.append('family', el.querySelector('#family').value || '내손글씨');
+      fd.append('fmt', el.querySelector('#fmt').value);
+      try{
+        const res = await fetch('/api/build',{method:'POST',body:fd});
+        const d = await res.json();
+        if(!res.ok) throw new Error(d.detail||'처리 실패');
+        go('font_result', {url:`/api/font/${d.id}`, family:d.family, filled:d.filled_cells, total:d.total_cells, syllables:d.syllables});
+      }catch(e){ status.innerHTML = `<div class="note err">⚠ ${e.message}</div>`; buildBtn.disabled=false; }
+    };
+  },
+  font_result: (el, ctx) => {
+    const face = new FontFace(ctx.family, `url(${ctx.url})`);
+    face.load().then(f=>{ document.fonts.add(f); el.querySelector('#preview').style.fontFamily = `"${ctx.family}"`; });
+  },
+  sagak: (el) => {
+    const inp = el.querySelector('#onomat'), prev = el.querySelector('#sagakPrev');
+    inp.oninput = () => { prev.textContent = inp.value || '사각사각'; };
+    el.querySelector('#saveCard').onclick = async () => {
+      const text = inp.value || '사각사각';
+      await document.fonts.ready;
+      const cv = el.querySelector('#cardCanvas'), c = cv.getContext('2d');
+      c.fillStyle = '#0a0a0a'; c.fillRect(0,0,1080,1080);
+      c.fillStyle = '#fafafa'; c.textAlign='center'; c.textBaseline='middle';
+      let size = 260; c.font = `900 ${size}px Paperlogy`;
+      while(c.measureText(text).width > 900 && size>60){ size-=10; c.font=`900 ${size}px Paperlogy`; }
+      c.fillText(text, 540, 520);
+      c.fillStyle = '#737373'; c.font = '500 32px Paperlogy';
+      c.fillText('사맛디 · 한글날 2026', 540, 960);
+      const a = document.createElement('a');
+      a.href = cv.toDataURL('image/png'); a.download = `${text}.png`; a.click();
+    };
+  },
+};
+
+reset('intro');
 </script>
 </body>
 </html>

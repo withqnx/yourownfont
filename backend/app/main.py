@@ -1,7 +1,7 @@
-"""FastAPI app: template download, font build, preview/download.
+"""FastAPI app for the 한글날 event site.
 
-v1 builds synchronously (Latin only, sub-second). The async job queue described
-in the plan is introduced in v2 when GPU-bound Hangul AI generation lands.
+Serves the step-by-step wizard frontend and the font-maker API (사맛디 > 폰트
+만들기). Font builds are synchronous (jamo composition, ~a few seconds).
 """
 from __future__ import annotations
 
@@ -9,7 +9,8 @@ import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, Response
+from fastapi.responses import HTMLResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 from .pipeline import build_from_scan
 from .template import generate_template_pdf
@@ -17,10 +18,13 @@ from .template import generate_template_pdf
 app = FastAPI(title="YourOwnFont")
 
 # In-memory store of built fonts: id -> (font_bytes, family, fmt). Fine for a
-# single process MVP; swap for object storage when the job queue arrives.
+# single process MVP; swap for object storage when persistence lands.
 _FONTS: dict[str, tuple[bytes, str, str]] = {}
 
-FRONTEND = Path(__file__).resolve().parents[2] / "frontend" / "index.html"
+_FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
+FRONTEND = _FRONTEND_DIR / "index.html"
+
+app.mount("/assets", StaticFiles(directory=str(_FRONTEND_DIR / "assets")), name="assets")
 
 
 @app.get("/", response_class=HTMLResponse)
