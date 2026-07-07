@@ -101,28 +101,35 @@ def font(font_id: str) -> Response:
     )
 
 
-# ---------------- 제 ᄠᅳ들 · 대나무숲 / 진심 ----------------
+MAX_IMG = 3_000_000  # ~2.2MB decoded; handwriting photos are resized client-side
+POST_KINDS = ("bamboo", "letter")  # 대나무숲 / 그대에게
+
+
+def _check_image(image: str) -> None:
+    if not image or not image.startswith("data:image/"):
+        raise HTTPException(400, "손글씨 사진을 올려주세요.")
+    if len(image) > MAX_IMG:
+        raise HTTPException(413, "이미지가 너무 큽니다.")
+
+
+# ---------------- 제 ᄠᅳ들 · 대나무숲 / 그대에게 (손글씨 사진) ----------------
 class PostIn(BaseModel):
-    kind: str            # "bamboo" | "truth"
-    text: str
+    kind: str            # "bamboo" | "letter"
+    image: str           # base64 data URL
 
 
 @app.post("/api/posts")
 def create_post(p: PostIn) -> dict:
-    if p.kind not in ("bamboo", "truth"):
-        raise HTTPException(400, "kind must be 'bamboo' or 'truth'.")
-    text = (p.text or "").strip()
-    if not (1 <= len(text) <= 1000):
-        raise HTTPException(400, "1~1000자 사이로 적어주세요.")
-    if _blocked(text):
-        raise HTTPException(422, "혐오·비속 표현이 감지되어 등록할 수 없습니다.")
-    pid = store.add_post(p.kind, text)
+    if p.kind not in POST_KINDS:
+        raise HTTPException(400, "invalid kind")
+    _check_image(p.image)
+    pid = store.add_post(p.kind, p.image)
     return {"id": pid, "status": "visible"}
 
 
 @app.get("/api/posts/{kind}")
 def get_posts(kind: str) -> dict:
-    if kind not in ("bamboo", "truth"):
+    if kind not in POST_KINDS:
         raise HTTPException(400, "invalid kind")
     return {"posts": store.list_posts(kind)}
 
@@ -165,7 +172,7 @@ def _today_prompt() -> str:
 
 class ChallengeIn(BaseModel):
     who: str
-    text: str
+    image: str
 
 
 @app.get("/api/challenge/today")
@@ -175,13 +182,9 @@ def challenge_today() -> dict:
 
 @app.post("/api/challenge")
 def challenge_submit(c: ChallengeIn) -> dict:
-    who = (c.who or "익명").strip()[:40]
-    text = (c.text or "").strip()
-    if not (1 <= len(text) <= 500):
-        raise HTTPException(400, "1~500자 사이로 적어주세요.")
-    if _blocked(text):
-        raise HTTPException(422, "혐오·비속 표현이 감지되었습니다.")
-    store.add_challenge(who, _today(), _today_prompt(), text)
+    who = (c.who or "익명").strip()[:48]
+    _check_image(c.image)
+    store.add_challenge(who, _today(), _today_prompt(), c.image)
     return {"streak": store.challenge_streak(who)}
 
 
@@ -190,6 +193,19 @@ def challenge_wall() -> dict:
     return {"entries": store.challenge_wall()}
 
 
+@app.get("/api/challenge/top")
+def challenge_top() -> dict:
+    return {"top": store.challenge_top(3)}
+
+
+@app.post("/api/challenge/{cid}/like")
+def challenge_like(cid: int) -> dict:
+    likes = store.like_challenge(cid)
+    if likes < 0:
+        raise HTTPException(404, "not found")
+    return {"likes": likes}
+
+
 @app.get("/api/challenge/streak")
 def challenge_streak(who: str = "") -> dict:
-    return {"streak": store.challenge_streak(who.strip()[:40])}
+    return {"streak": store.challenge_streak(who.strip()[:48])}

@@ -100,6 +100,27 @@
   .pl-pen{offset-path:path('M25 25 L95 25 L95 95 L25 95 Z');offset-rotate:auto;animation:plmove 1.9s linear infinite;}
   @keyframes plmove{from{offset-distance:0%}to{offset-distance:100%}}
   .penmsg{color:var(--mid);font-size:14px;}
+  /* photo gallery */
+  .gallery{display:grid;grid-template-columns:1fr 1fr;gap:10px;overflow-y:auto;max-height:46dvh;padding-right:2px;}
+  .gcard{position:relative;border:1px solid var(--hairline);border-radius:var(--r-nested);overflow:hidden;background:var(--surface);}
+  .gcard img{width:100%;display:block;}
+  .gcard .bar{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;font-size:13px;}
+  .gcard .like{background:none;border:0;cursor:pointer;color:var(--mid);font-size:13px;padding:2px;}
+  .gcard .like.on{color:var(--ember);}
+  .gcard .rep{background:none;border:0;cursor:pointer;color:var(--mid);font-size:12px;}
+  .gcard .rep:hover{color:var(--ember);}
+  .rank{position:absolute;top:8px;left:8px;background:var(--ink);color:#fafafa;font-size:12px;font-weight:700;padding:2px 9px;border-radius:12px;z-index:1;}
+  /* photo cropper (rotate + free crop) */
+  .cropper{position:absolute;inset:0;z-index:9;background:var(--paper);border-radius:var(--r-card);display:flex;flex-direction:column;padding:20px;}
+  .crop-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  .crop-stage{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--surface);border-radius:var(--r-nested);}
+  .crop-imgwrap{position:relative;line-height:0;}
+  .crop-imgwrap canvas{max-width:100%;max-height:54dvh;display:block;touch-action:none;}
+  .crop-box{position:absolute;border:2px solid var(--ember);box-shadow:0 0 0 9999px rgba(0,0,0,.4);cursor:move;touch-action:none;}
+  .crop-h{position:absolute;width:18px;height:18px;background:#fff;border:2px solid var(--ember);border-radius:50%;touch-action:none;}
+  .crop-h.tl{left:-10px;top:-10px;cursor:nwse-resize;}.crop-h.tr{right:-10px;top:-10px;cursor:nesw-resize;}
+  .crop-h.bl{left:-10px;bottom:-10px;cursor:nesw-resize;}.crop-h.br{right:-10px;bottom:-10px;cursor:nwse-resize;}
+  .crop-foot{display:flex;gap:10px;margin-top:12px;}
   .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
   .field label{font-size:13px;color:var(--mid);}
   .input,select,textarea{font-family:var(--font);font-size:15px;color:var(--ink);background:var(--canvas);
@@ -147,6 +168,63 @@ function render(){
 }
 async function api(url,opts){const r=await fetch(url,opts);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||'오류');return d;}
 const esc=s=>String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+
+// ---- 손글씨 사진: 촬영/선택 → 회전 + 자유 크롭 → JPEG data URL (키보드 없음) ----
+function pickPhoto(cb){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment');
+  inp.onchange=()=>{ if(inp.files[0]) openCropper(inp.files[0],cb); };
+  inp.click();
+}
+function openCropper(file,cb){
+  const img=new Image();
+  img.onload=()=>{
+    const MAXW=1600, sc=Math.min(1,MAXW/Math.max(img.width,img.height));
+    let work=document.createElement('canvas'); work.width=Math.round(img.width*sc); work.height=Math.round(img.height*sc);
+    work.getContext('2d').drawImage(img,0,0,work.width,work.height);
+    const ov=document.createElement('div'); ov.className='cropper';
+    ov.innerHTML=`<div class="crop-head"><button class="btn ghost" id="crRot">↻ 회전</button>
+      <div class="row"><button class="btn ghost" id="crCancel">취소</button><button class="btn primary" id="crOk">확인</button></div></div>
+      <div class="crop-stage"><div class="crop-imgwrap" id="crWrap"></div></div>`;
+    document.querySelector('.window').appendChild(ov);
+    const wrap=ov.querySelector('#crWrap'); let box;
+    const dispScale=()=>work.getBoundingClientRect().width/work.width;
+    function layout(){const s=dispScale(),b=ov.querySelector('#crBox');if(!b)return;
+      b.style.left=box.x*s+'px';b.style.top=box.y*s+'px';b.style.width=box.w*s+'px';b.style.height=box.h*s+'px';}
+    function mount(){
+      wrap.innerHTML=''; wrap.appendChild(work);
+      box={x:work.width*0.08,y:work.height*0.08,w:work.width*0.84,h:work.height*0.84};
+      const b=document.createElement('div'); b.className='crop-box'; b.id='crBox';
+      b.innerHTML='<div class="crop-h tl"></div><div class="crop-h tr"></div><div class="crop-h bl"></div><div class="crop-h br"></div>';
+      wrap.appendChild(b); bindDrag(b); requestAnimationFrame(layout);
+    }
+    function bindDrag(b){
+      let mode=null,sx,sy,ob;
+      const start=(e,m)=>{mode=m;sx=e.clientX;sy=e.clientY;ob={...box};e.preventDefault();e.stopPropagation();
+        window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);};
+      const move=(e)=>{const s=dispScale(),dx=(e.clientX-sx)/s,dy=(e.clientY-sy)/s;let n={...ob};
+        if(mode==='move'){n.x=ob.x+dx;n.y=ob.y+dy;}
+        else{if(mode.includes('l')){n.x=ob.x+dx;n.w=ob.w-dx;}if(mode.includes('r'))n.w=ob.w+dx;
+             if(mode.includes('t')){n.y=ob.y+dy;n.h=ob.h-dy;}if(mode.includes('b'))n.h=ob.h+dy;}
+        n.w=Math.max(40,n.w);n.h=Math.max(40,n.h);
+        n.x=Math.max(0,Math.min(n.x,work.width-n.w));n.y=Math.max(0,Math.min(n.y,work.height-n.h));
+        n.w=Math.min(n.w,work.width-n.x);n.h=Math.min(n.h,work.height-n.y);box=n;layout();};
+      const end=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end);mode=null;};
+      b.addEventListener('pointerdown',e=>start(e,'move'));
+      ['tl','tr','bl','br'].forEach(m=>b.querySelector('.'+m).addEventListener('pointerdown',e=>start(e,m)));
+    }
+    ov.querySelector('#crRot').onclick=()=>{const c=document.createElement('canvas');c.width=work.height;c.height=work.width;
+      const x=c.getContext('2d');x.translate(c.width,0);x.rotate(Math.PI/2);x.drawImage(work,0,0);work=c;mount();};
+    ov.querySelector('#crCancel').onclick=()=>{window.removeEventListener('resize',layout);ov.remove();};
+    ov.querySelector('#crOk').onclick=()=>{
+      const CAP=1000,s=Math.min(1,CAP/Math.max(box.w,box.h)),out=document.createElement('canvas');
+      out.width=Math.round(box.w*s);out.height=Math.round(box.h*s);
+      out.getContext('2d').drawImage(work,box.x,box.y,box.w,box.h,0,0,out.width,out.height);
+      const data=out.toDataURL('image/jpeg',0.85);window.removeEventListener('resize',layout);ov.remove();cb(data);};
+    mount(); window.addEventListener('resize',layout);
+  };
+  img.src=URL.createObjectURL(file);
+}
+function uid(){let u=localStorage.getItem('sm_uid');if(!u){u='u'+Math.random().toString(36).slice(2,10);localStorage.setItem('sm_uid',u);}return u;}
 
 // infographic SVGs (thin stroke, monochrome + ember)
 const ART={
@@ -262,26 +340,28 @@ const STEPS={
     <div class="choices">
       <button class="choice" onclick="go('posts',{kind:'bamboo',name:'대나무숲'})"><div class="ct"><span class="title" style="font-family:var(--font)">대나무숲</span><span class="num">속 시원히</span></div>
         <div class="sub">임금님 귀는 당나귀 귀 — 마음속 이야기를 외친다.</div></button>
-      <button class="choice" onclick="go('posts',{kind:'truth',name:'진심'})"><div class="ct"><span class="title" style="font-family:var(--font)">진심</span><span class="num">꾹꾹</span></div>
-        <div class="sub">누군가에게 진심을 담아, 한 자 한 자 눌러 적는다.</div></button>
+      <button class="choice" onclick="go('posts',{kind:'letter',name:'그대에게'})"><div class="ct"><span class="title" style="font-family:var(--font)">그대에게</span><span class="num">손편지</span></div>
+        <div class="sub">누군가에게 부치는 손편지처럼, 마음을 꾹꾹 눌러 적는다.</div></button>
     </div>
-    <p class="muted" style="margin-top:16px;line-height:1.6">혐오·비속 표현은 등록 시 걸러지고, 신고된 글은 즉시 숨겨진 뒤 검토됩니다.</p>`}),
+    <p class="muted" style="margin-top:16px;line-height:1.6">모든 글은 만년필로 써서 사진으로 올립니다. 신고된 글은 즉시 숨겨진 뒤 검토됩니다.</p>`}),
 
   posts:(ctx)=>({crumb:`제 ᄠᅳ들 › ${ctx.name}`,html:`
     <div class="label">${ctx.name}</div>
-    <div class="field"><textarea id="ptext" maxlength="1000" placeholder="여기에 적어주세요…"></textarea></div>
-    <div class="row"><button class="btn primary" id="submitPost">올리기</button><span class="muted" id="pstatus"></span></div>
-    <div class="postlist" id="plist"></div>`}),
+    <p class="muted" style="margin-bottom:10px">만년필로 써서 사진으로 올려주세요. 키보드는 쓰지 않아요.</p>
+    <div class="row"><button class="btn primary" id="up">✍️ 써서 올리기</button></div>
+    <div id="pstatus"></div>
+    <div class="gallery" id="plist" style="margin-top:14px"></div>`}),
 
   // ---------- 날로 ᄡᅮ메 편안킈 : 챌린지 ----------
   nallo:()=>({crumb:'서문 › <b class="old">날로 ᄡᅮ메 편안킈</b>',html:`
     <div class="label old">날로 ᄡᅮ메 편안킈 · 챌린지</div>
     <div class="subcard" style="text-align:center"><div class="muted">오늘의 단어</div>
       <div class="display" id="prompt" style="font-size:clamp(30px,8vw,44px);margin-top:6px">…</div></div>
-    <div class="field" style="margin-top:16px"><label>이름</label><input class="input" id="who" placeholder="닉네임" value="" /></div>
-    <div class="field"><label>오늘의 한 줄</label><textarea id="ctext" maxlength="500" placeholder="오늘의 단어로 한 줄 써보세요…"></textarea></div>
-    <div class="row"><button class="btn primary" id="submitC">올리기</button><span class="muted" id="cstatus"></span></div>
-    <div class="postlist" id="wall"></div>`}),
+    <p class="muted" style="margin-top:12px">이 단어를 만년필로 써서 사진으로 올려주세요.</p>
+    <div class="row" style="margin-top:6px"><button class="btn primary" id="up">✍️ 써서 올리기</button>
+      <button class="btn ghost" id="tabBtn" style="margin-left:auto">🏆 Top 3</button></div>
+    <div id="cstatus"></div>
+    <div class="gallery" id="wall" style="margin-top:14px"></div>`}),
 
   admin:()=>({crumb:'관리자',html:`
     <div class="label">관리자 · 검토 대기</div>
@@ -322,22 +402,26 @@ const WIRE={
       const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download=`${t}.png`;a.click();};
   },
   posts:(el,ctx)=>{
-    const list=el.querySelector('#plist'),ta=el.querySelector('#ptext'),st=el.querySelector('#pstatus');
+    const list=el.querySelector('#plist'),st=el.querySelector('#pstatus');
     async function load(){try{const d=await api(`/api/posts/${ctx.kind}`);list.innerHTML=d.posts.map(p=>
-      `<div class="post"><p>${esc(p.text)}</p><button class="rep" onclick="reportPost(${p.id},this)">신고</button></div>`).join('')||'<div class="muted">아직 글이 없어요. 처음으로 남겨보세요.</div>';}catch(e){}}
-    el.querySelector('#submitPost').onclick=async()=>{const text=ta.value.trim();if(!text)return;
-      st.textContent='등록 중…';try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:ctx.kind,text})});
-        ta.value='';st.textContent='';load();}catch(e){st.textContent='';alert(e.message);}};
+      `<div class="gcard"><img src="${p.image}" loading="lazy"><div class="bar"><span class="muted">익명</span><button class="rep" onclick="reportPost(${p.id},this)">신고</button></div></div>`).join('')||'<div class="muted">아직 없어요. 처음으로 남겨보세요.</div>';}catch(e){}}
+    el.querySelector('#up').onclick=()=>pickPhoto(async data=>{st.innerHTML=PEN;
+      try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:ctx.kind,image:data})});
+        st.innerHTML='<div class="note ok">올렸어요</div>';load();}catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
     load();
   },
   nallo:(el)=>{
-    const prompt=el.querySelector('#prompt'),wall=el.querySelector('#wall'),st=el.querySelector('#cstatus');
-    api('/api/challenge/today').then(d=>{prompt.textContent=d.prompt;});
-    async function loadWall(){try{const d=await api('/api/challenge/wall');wall.innerHTML=d.entries.map(e=>
-      `<div class="post"><p><b>${esc(e.prompt)}</b> · ${esc(e.text)}</p><div class="muted" style="font-size:12px;margin-top:4px">${esc(e.who)}</div></div>`).join('')||'<div class="muted">첫 기록을 남겨보세요.</div>';}catch(e){}}
-    el.querySelector('#submitC').onclick=async()=>{const who=el.querySelector('#who').value.trim()||'익명',text=el.querySelector('#ctext').value.trim();if(!text)return;
-      st.textContent='올리는 중…';try{const d=await api('/api/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({who,text})});
-        el.querySelector('#ctext').value='';st.textContent=`🔥 ${d.streak}일째`;loadWall();}catch(e){st.textContent='';alert(e.message);}};
+    const wall=el.querySelector('#wall'),st=el.querySelector('#cstatus'),tab=el.querySelector('#tabBtn');let top=false;
+    api('/api/challenge/today').then(d=>{el.querySelector('#prompt').textContent=d.prompt;});
+    const card=(e,rank)=>`<div class="gcard">${rank?`<div class="rank">${rank}위</div>`:''}<img src="${e.image}" loading="lazy">
+      <div class="bar"><span class="muted">${esc(e.prompt||'')}</span><button class="like" onclick="likeC(${e.id},this)">♥ ${e.likes||0}</button></div></div>`;
+    async function loadWall(){try{const d=await api('/api/challenge/wall');wall.innerHTML=d.entries.map(e=>card(e)).join('')||'<div class="muted">첫 기록을 남겨보세요.</div>';}catch(e){}}
+    async function loadTop(){try{const d=await api('/api/challenge/top');wall.innerHTML=d.top.map((e,i)=>card(e,i+1)).join('')||'<div class="muted">아직 없어요.</div>';}catch(e){}}
+    tab.onclick=()=>{top=!top;tab.textContent=top?'전체 보기':'🏆 Top 3';top?loadTop():loadWall();};
+    el.querySelector('#up').onclick=()=>pickPhoto(async data=>{st.innerHTML=PEN;
+      try{const d=await api('/api/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({who:uid(),image:data})});
+        st.innerHTML=`<div class="note ok">🔥 ${d.streak}일째 · 올렸어요</div>`;top=false;tab.textContent='🏆 Top 3';loadWall();}
+      catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
     loadWall();
   },
   admin:(el)=>{
@@ -345,15 +429,16 @@ const WIRE={
     let token='';
     async function load(){token=el.querySelector('#token').value;st.textContent='불러오는 중…';
       try{const d=await api(`/api/admin/queue?token=${encodeURIComponent(token)}`);st.textContent='';
-        q.innerHTML=d.queue.map(p=>`<div class="post"><p>${esc(p.text)}</p><div class="muted" style="font-size:12px;margin:4px 0">신고 ${p.reports} · ${p.kind}</div>
-          <div class="row"><button class="btn ghost" onclick="mod(${p.id},true,this)">허용</button><button class="btn ghost" style="color:var(--ember)" onclick="mod(${p.id},false,this)">삭제</button></div></div>`).join('')||'<div class="muted">검토할 글이 없습니다.</div>';}
+        q.innerHTML=d.queue.map(p=>`<div class="gcard"><img src="${p.image}" loading="lazy"><div class="bar"><span class="muted">신고 ${p.reports} · ${p.kind}</span></div>
+          <div class="row" style="padding:0 10px 10px"><button class="btn ghost" onclick="mod(${p.id},true,this)">허용</button><button class="btn ghost" style="color:var(--ember)" onclick="mod(${p.id},false,this)">삭제</button></div></div>`).join('')||'<div class="muted">검토할 글이 없습니다.</div>';}
       catch(e){st.textContent='';alert(e.message);}}
     window.mod=async(id,allow,btn)=>{const fd=new FormData();fd.append('allow',allow);fd.append('token',token);
-      try{await api(`/api/admin/posts/${id}/moderate`,{method:'POST',body:fd});btn.closest('.post').remove();}catch(e){alert(e.message);}};
+      try{await api(`/api/admin/posts/${id}/moderate`,{method:'POST',body:fd});btn.closest('.gcard,.post').remove();}catch(e){alert(e.message);}};
     el.querySelector('#loadQ').onclick=load;
   },
 };
-window.reportPost=async(id,btn)=>{if(!confirm('이 글을 신고할까요? 즉시 숨겨집니다.'))return;try{await api(`/api/posts/${id}/report`,{method:'POST'});btn.closest('.post').remove();}catch(e){alert(e.message);}};
+window.reportPost=async(id,btn)=>{if(!confirm('이 글을 신고할까요? 즉시 숨겨집니다.'))return;try{await api(`/api/posts/${id}/report`,{method:'POST'});btn.closest('.gcard,.post').remove();}catch(e){alert(e.message);}};
+window.likeC=async(id,btn)=>{try{const d=await api(`/api/challenge/${id}/like`,{method:'POST'});btn.classList.add('on');btn.textContent='♥ '+d.likes;}catch(e){}};
 
 if(location.hash==='#admin') reset('admin'); else reset('cover');
 </script>
