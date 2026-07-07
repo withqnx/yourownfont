@@ -209,3 +209,23 @@ def challenge_like(cid: int) -> dict:
 @app.get("/api/challenge/streak")
 def challenge_streak(who: str = "") -> dict:
     return {"streak": store.challenge_streak(who.strip()[:48])}
+
+
+# ---------------- 사각사각 · 소리 → 손글씨 의성어 ----------------
+class SagakIn(BaseModel):
+    sound: str
+    image: str
+
+
+@app.post("/api/sagak")
+def sagak_submit(s: SagakIn) -> dict:
+    sound = (s.sound or "").strip()[:32]
+    if not sound:
+        raise HTTPException(400, "invalid sound")
+    _check_image(s.image)
+    return {"id": store.add_sagak(sound, s.image)}
+
+
+@app.get("/api/sagak/{sound}")
+def sagak_list(sound: str) -> dict:
+    return {"entries": store.list_sagak(sound.strip()[:32])}

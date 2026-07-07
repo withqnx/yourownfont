@@ -34,6 +34,15 @@ posts = Table(
     Column("created_at", DateTime),
 )
 
+# 사각사각 — 소리를 듣고 쓴 의성어 손글씨 사진.
+sagak = Table(
+    "sagak", meta,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("sound", String(32)),
+    Column("image", Text),
+    Column("created_at", DateTime),
+)
+
 # 날로 ᄡᅮ메 편안킈 — daily-word challenge. Image + likes.
 challenge = Table(
     "challenge", meta,
@@ -121,6 +130,19 @@ def like_challenge(cid: int) -> int:
         likes = (row["likes"] or 0) + 1
         c.execute(update(challenge).where(challenge.c.id == cid).values(likes=likes))
     return likes
+
+
+def add_sagak(sound: str, image: str) -> int:
+    with engine.begin() as c:
+        r = c.execute(insert(sagak).values(sound=sound, image=image, created_at=_now()))
+        return int(r.inserted_primary_key[0])
+
+
+def list_sagak(sound: str, limit: int = 40) -> list[dict]:
+    with engine.begin() as c:
+        rows = c.execute(select(sagak).where(sagak.c.sound == sound)
+                         .order_by(sagak.c.id.desc()).limit(limit)).mappings().all()
+    return [dict(r) for r in rows]
 
 
 def challenge_streak(who: str) -> int:
