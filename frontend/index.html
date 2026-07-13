@@ -10,13 +10,13 @@
   @font-face{font-family:"Paperlogy";font-weight:500;src:url("/assets/fonts/Paperlogy-5Medium.ttf") format("truetype");font-display:swap;}
   @font-face{font-family:"Paperlogy";font-weight:700;src:url("/assets/fonts/Paperlogy-7Bold.ttf") format("truetype");font-display:swap;}
   @font-face{font-family:"Paperlogy";font-weight:900;src:url("/assets/fonts/Paperlogy-9Black.ttf") format("truetype");font-display:swap;}
-  @font-face{font-family:"OldHangul";src:url("/assets/fonts/oldhangul.woff2") format("woff2");font-display:swap;}
+  @font-face{font-family:"EBSHunmin";src:url("/assets/fonts/EBSHunmin.woff") format("woff");font-display:swap;}
 
   :root{
     --canvas:#f5f5f5;--paper:#fff;--surface:#fafafa;--ink:#0a0a0a;--ink-soft:#171717;
     --mid:#737373;--hairline:#e5e5e5;--ember:#e7000b;--r-card:24px;--r-btn:18px;--r-nested:10px;
     --font:"Paperlogy",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    --old:"OldHangul","함초롬바탕","AppleMyungjo","Batang",serif;
+    --old:"EBSHunmin","Paperlogy",serif;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
@@ -280,7 +280,7 @@ const SLIDES=[
 const STEPS={
   cover:()=>({crumb:'',html:`
     <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
-      <div class="cover-year">2026</div><div class="cover-day">한글날</div>
+      <div class="cover-year old">2026</div><div class="cover-day old">한글날</div>
       <div class="muted" style="margin-top:22px;font-size:15px">훈민정음 반포 580년 · 가갸날 100년</div>
     </div>
     <div class="foot"><button class="btn primary lg" onclick="go('preface')">들어가기 →</button></div>`}),
@@ -288,29 +288,29 @@ const STEPS={
   preface:()=>({crumb:'처음으로',html:`
     <div class="label">훈민정음 언해</div>
     <div class="lead old" style="margin-top:0">
-      나랏말ᄊᆞ미 듕귁에 달아<br>
-      문ᄍᆞ와로 서르 <span class="hl">ᄉᆞᄆᆞᆺ디</span> 아니ᄒᆞᆯᄊᆡ<br>
-      이런 젼ᄎᆞ로 어린 ᄇᆡᆨ셩이 니르고져 홇 배 이셔도<br>
-      ᄆᆞᄎᆞᆷ내 <span class="hl">제 ᄠᅳ들</span> 시러 펴디 몯ᄒᆞᇙ 노미 하니라<br>
-      내 이ᄅᆞᆯ 위ᄒᆞ야 어엿비 너겨<br>
-      <span class="hl">날로 ᄡᅮ메 편안킈</span> ᄒᆞ고져 ᄒᆞᇙ ᄯᆞᄅᆞ미니라
+      나라의 말이 중국과 달라<br>
+      서로 <span class="hl">사맛디</span> 아니하니<br>
+      이런 까닭으로 어린 백성이 이르고자 할 바 있어도<br>
+      마침내 <span class="hl">제 뜯</span>을 펴지 못할 이 많으니라<br>
+      내 이를 딱하게 여겨<br>
+      <span class="hl">날로 씀에 편안케</span> 하고자 할 따름이니라
     </div>
     <div class="foot"><button class="btn primary lg" onclick="go('hub')">다음 →</button></div>`}),
 
   hub:()=>({crumb:'서문',html:`
-    <div class="label old">세 ᄠᅳ들</div>
+    <div class="label old">세 뜯</div>
     <div class="choices" style="margin-top:2px">
-      <button class="choice" onclick="go('samatdi')"><div class="ct"><span class="title old">ᄉᆞᄆᆞᆺ디</span><span class="num">소통</span></div>
+      <button class="choice" onclick="go('samatdi')"><div class="ct"><span class="title old">사맛디</span><span class="num">소통</span></div>
         <div class="sub">소리와 문자가 통하다. 손글씨로 폰트를 만들고, 소리를 글자로 옮긴다.</div></button>
-      <button class="choice" onclick="go('jetteul')"><div class="ct"><span class="title old">제 ᄠᅳ들</span><span class="num">표현</span></div>
+      <button class="choice" onclick="go('jetteul')"><div class="ct"><span class="title old">제 뜯</span><span class="num">표현</span></div>
         <div class="sub">마침내 제 뜻을 펴다. 익명의 공간에 하고 싶던 말을 적는다.</div></button>
-      <button class="choice" onclick="go('nallo')"><div class="ct"><span class="title old">날로 ᄡᅮ메 편안킈</span><span class="num">편안</span></div>
+      <button class="choice" onclick="go('nallo')"><div class="ct"><span class="title old">날로 씀에 편안케</span><span class="num">편안</span></div>
         <div class="sub">날로 씀에 편안케. 매일 한 단어씩 쓰는 챌린지.</div></button>
     </div>`}),
 
-  // ---------- ᄉᆞᄆᆞᆺ디 : 정사각 인포그래픽 썸네일 ----------
-  samatdi:()=>({crumb:'서문 › <b class="old">ᄉᆞᄆᆞᆺ디</b>',html:`
-    <div class="label old">ᄉᆞᄆᆞᆺ디 · 소통</div>
+  // ---------- 사맛디 : 정사각 인포그래픽 썸네일 ----------
+  samatdi:()=>({crumb:'서문 › <b class="old">사맛디</b>',html:`
+    <div class="label old">사맛디 · 소통</div>
     <div class="thumbs">
       <button class="thumb" onclick="go('font_intro')">
         <div class="art">${ART.font}</div><div class="tt">폰트 만들기</div>
@@ -320,7 +320,7 @@ const STEPS={
         <div class="ts">의성어·의태어를 글자 카드로.</div><div class="go">써보러 가기 →</div></button>
     </div>`}),
 
-  font_intro:()=>({crumb:'ᄉᆞᄆᆞᆺ디 › 폰트 만들기',html:`
+  font_intro:()=>({crumb:'사맛디 › 폰트 만들기',html:`
     <div class="label">폰트 만들기 · 이렇게 진행돼요</div>
     <div class="carousel"><div class="track" id="track">
       ${SLIDES.map(s=>`<div class="slide"><div class="art">${s.art}</div><div class="cap">${s.cap}</div><div class="ssub">${s.sub}</div></div>`).join('')}
@@ -329,7 +329,7 @@ const STEPS={
     <div class="subcard row" style="justify-content:space-between"><span>글자 템플릿 PDF</span><a class="btn primary" href="/api/template" download>받기</a></div>
     <div class="foot"><button class="btn primary lg" onclick="go('font_upload')">다 썼어요, 올리기 →</button></div>`}),
 
-  font_upload:()=>({crumb:'ᄉᆞᄆᆞᆺ디 › 폰트 만들기',html:`
+  font_upload:()=>({crumb:'사맛디 › 폰트 만들기',html:`
     <div class="label">2 · 스캔 올리기</div><div class="display">올리기</div>
     <div style="margin-top:16px">
       <div class="field"><label>폰트 이름</label><input class="input" id="family" value="내손글씨" /></div>
@@ -340,12 +340,12 @@ const STEPS={
       <div id="status"></div>
     </div>`}),
 
-  font_result:(ctx)=>({crumb:'ᄉᆞᄆᆞᆺ디 › 폰트 만들기',html:`
+  font_result:(ctx)=>({crumb:'사맛디 › 폰트 만들기',html:`
     <div class="label">3 · 완성</div><div class="note ok">${ctx.filled}/${ctx.total}칸 · 한글 ${Number(ctx.syllables).toLocaleString()}자</div>
     <div id="preview" contenteditable="true" spellcheck="false">내 손글씨로 만든 한글 0123</div>
     <div class="foot actions"><a class="btn primary lg" href="${ctx.url}" download>다운로드</a><button class="btn ghost" onclick="reset('cover')">처음으로</button></div>`}),
 
-  sagak:()=>({crumb:'ᄉᆞᄆᆞᆺ디 › 사각사각',html:`
+  sagak:()=>({crumb:'사맛디 › 사각사각',html:`
     <div class="label">사각사각 · 소리를 글자로</div>
     <p class="muted" style="margin-bottom:10px">소리를 듣고, 어떤 소리로 들리는지 <b>만년필로 써서</b> 올려요.</p>
     <div class="subcard" style="text-align:center">
@@ -358,9 +358,9 @@ const STEPS={
     <div class="row" style="margin-top:14px"><button class="btn primary" id="up">✍️ 써서 올리기</button><span class="muted" id="sstatus"></span></div>
     <div class="gallery" id="sgallery" style="margin-top:14px"></div>`}),
 
-  // ---------- 제 ᄠᅳ들 : 대나무숲 / 진심 ----------
-  jetteul:()=>({crumb:'서문 › <b class="old">제 ᄠᅳ들</b>',html:`
-    <div class="label old">제 ᄠᅳ들 · 표현</div>
+  // ---------- 제 뜯 : 대나무숲 / 진심 ----------
+  jetteul:()=>({crumb:'서문 › <b class="old">제 뜯</b>',html:`
+    <div class="label old">제 뜯 · 표현</div>
     <div class="thumbs">
       <button class="thumb" onclick="go('mindmap',{kind:'bamboo',name:'대나무숲'})"><div class="art">${ART.bamboo}</div><div class="tt">대나무숲</div>
         <div class="ts">속 시원히 외치고 싶은 말.</div><div class="go">들어가기 →</div></button>
@@ -369,15 +369,15 @@ const STEPS={
     </div>
     <p class="muted" style="margin-top:14px;line-height:1.6">모든 글은 만년필로 써서 사진으로 올립니다.</p>`}),
 
-  mindmap:(ctx)=>({crumb:`제 ᄠᅳ들 › ${ctx.name}`,html:`
+  mindmap:(ctx)=>({crumb:`제 뜯 › ${ctx.name}`,html:`
     <div class="label">${ctx.name} · 마음의 지도</div>
     <div class="mindwrap"><svg id="brain" viewBox="0 0 400 300" width="100%"></svg></div>
     <div class="muted" style="text-align:center;margin-top:8px">점을 누르면 다른 사람의 손글씨가 열립니다</div>
     <div class="foot"><button class="btn primary lg block" id="mine">✍️ 나도 쓰기</button><div id="mstatus"></div></div>`}),
 
-  // ---------- 날로 ᄡᅮ메 편안킈 : 챌린지 ----------
-  nallo:()=>({crumb:'서문 › <b class="old">날로 ᄡᅮ메 편안킈</b>',html:`
-    <div class="label old">날로 ᄡᅮ메 편안킈 · 챌린지</div>
+  // ---------- 날로 씀에 편안케 : 챌린지 ----------
+  nallo:()=>({crumb:'서문 › <b class="old">날로 씀에 편안케</b>',html:`
+    <div class="label old">날로 씀에 편안케 · 챌린지</div>
     <div class="subcard" style="text-align:center"><div class="muted">오늘의 단어</div>
       <div class="display" id="prompt" style="font-size:clamp(30px,8vw,44px);margin-top:6px">…</div></div>
     <p class="muted" style="margin-top:12px">이 단어를 만년필로 써서 사진으로 올려주세요.</p>
