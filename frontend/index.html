@@ -301,17 +301,17 @@ const STEPS={
   hub:()=>({crumb:'서문',html:`
     <div class="label old">세 뜯</div>
     <div class="choices" style="margin-top:2px">
-      <button class="choice" onclick="go('samatdi')"><div class="ct"><span class="title old">사맛디</span><span class="num">소통</span></div>
+      <button class="choice" onclick="go('samatdi')"><div class="ct"><span class="title old">ᄉᆞᄆᆞᆺ디</span><span class="num">소통</span></div>
         <div class="sub">소리와 문자가 통하다. 손글씨로 폰트를 만들고, 소리를 글자로 옮긴다.</div></button>
-      <button class="choice" onclick="go('jetteul')"><div class="ct"><span class="title old">마참내 제 뜯을</span><span class="num">표현</span></div>
+      <button class="choice" onclick="go('jetteul')"><div class="ct"><span class="title old">ᄆᆞᄎᆞᆷ내 제 ᄠᅳ들</span><span class="num">표현</span></div>
         <div class="sub">마침내 제 뜻을 펴다. 익명의 공간에 하고 싶던 말을 적는다.</div></button>
-      <button class="choice" onclick="go('nallo')"><div class="ct"><span class="title old">날로 씀에 편안케</span><span class="num">편안</span></div>
+      <button class="choice" onclick="go('nallo')"><div class="ct"><span class="title old">날로 ᄡᅮ메 편안킈</span><span class="num">편안</span></div>
         <div class="sub">날로 씀에 편안케. 매일 한 단어씩 쓰는 챌린지.</div></button>
     </div>`}),
 
   // ---------- 사맛디 : 정사각 인포그래픽 썸네일 ----------
-  samatdi:()=>({crumb:'서문 › <b class="old">사맛디</b>',html:`
-    <div class="label old">사맛디 · 소통</div>
+  samatdi:()=>({crumb:'서문 › <b class="old">ᄉᆞᄆᆞᆺ디</b>',html:`
+    <div class="label old">ᄉᆞᄆᆞᆺ디 · 소통</div>
     <div class="thumbs">
       <button class="thumb" onclick="go('font_intro')">
         <div class="art">${ART.font}</div><div class="tt">폰트 만들기</div>
@@ -360,8 +360,8 @@ const STEPS={
     <div class="gallery" id="sgallery" style="margin-top:14px"></div>`}),
 
   // ---------- 제 뜯 : 대나무숲 / 진심 ----------
-  jetteul:()=>({crumb:'서문 › <b class="old">제 뜯</b>',html:`
-    <div class="label old">마참내 제 뜯을 · 표현</div>
+  jetteul:()=>({crumb:'서문 › <b class="old">제 ᄠᅳ들</b>',html:`
+    <div class="label old">ᄆᆞᄎᆞᆷ내 제 ᄠᅳ들 · 표현</div>
     <div class="thumbs">
       <button class="thumb" onclick="go('mindmap',{kind:'bamboo',name:'대나무숲'})"><div class="art">${ART.bamboo}</div><div class="tt">대나무숲</div>
         <div class="ts">속 시원히 외치고 싶은 말.</div><div class="go">들어가기 →</div></button>
@@ -377,8 +377,8 @@ const STEPS={
     <div class="foot"><button class="btn primary lg block" id="mine">✍️ 나도 쓰기</button><div id="mstatus"></div></div>`}),
 
   // ---------- 날로 씀에 편안케 : 챌린지 ----------
-  nallo:()=>({crumb:'서문 › <b class="old">날로 씀에 편안케</b>',html:`
-    <div class="label old">날로 씀에 편안케 · 챌린지</div>
+  nallo:()=>({crumb:'서문 › <b class="old">날로 ᄡᅮ메 편안킈</b>',html:`
+    <div class="label old">날로 ᄡᅮ메 편안킈 · 챌린지</div>
     <div class="subcard" style="text-align:center"><div class="muted">오늘의 단어</div>
       <div class="display" id="prompt" style="font-size:clamp(30px,8vw,44px);margin-top:6px">…</div></div>
     <p class="muted" style="margin-top:12px">이 단어를 만년필로 써서 사진으로 올려주세요.</p>
