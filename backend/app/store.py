@@ -19,7 +19,9 @@ if not _url:
     _dir = os.environ.get("DATA_DIR", os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
     _url = f"sqlite:///{os.path.join(_dir, 'data.db')}"
 
-engine = create_engine(_url, future=True,
+# pool_pre_ping: serverless Postgres (Neon/Supabase) drops idle connections; ping
+# and reconnect before each use so a suspended DB doesn't surface as a 500.
+engine = create_engine(_url, future=True, pool_pre_ping=True,
                        connect_args={"check_same_thread": False} if _url.startswith("sqlite") else {})
 meta = MetaData()
 

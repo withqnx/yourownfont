@@ -169,7 +169,14 @@ function render(){
   stage.innerHTML=''; const el=document.createElement('div'); el.className='step'; el.innerHTML=s.html;
   stage.appendChild(el); if(WIRE[id])WIRE[id](el,ctx);
 }
-async function api(url,opts){const r=await fetch(url,opts);const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||'오류');return d;}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// Render 무료 플랜은 15분 유휴 후 잠들고 깨는 데 ~20s 걸림 → 그 사이 502/네트워크
+// 오류가 나므로 자동 재시도(콜드스타트 흡수). 소진되면 친절한 안내를 던진다.
+async function api(url,opts,_n){_n=_n||0;let r;
+  try{r=await fetch(url,opts);}
+  catch(e){if(_n<6){await sleep(4000);return api(url,opts,_n+1);}throw new Error('서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.');}
+  if((r.status===502||r.status===503||r.status===504)&&_n<6){await sleep(4000);return api(url,opts,_n+1);}
+  const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||'오류');return d;}
 const esc=s=>String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
 
 // ---- 손글씨 사진: 촬영/선택 → 회전 + 자유 크롭 → JPEG data URL (키보드 없음) ----
