@@ -48,6 +48,12 @@ def index() -> HTMLResponse:
     return HTMLResponse(FRONTEND.read_text(encoding="utf-8"))
 
 
+@app.get("/api/diag")
+def diag() -> dict:
+    """Is persistence live? db=='postgresql' → DATABASE_URL wired, uploads persist."""
+    return store.stats()
+
+
 @app.get("/api/template")
 def template() -> Response:
     pdf = generate_template_pdf()

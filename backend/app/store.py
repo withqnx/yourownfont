@@ -152,3 +152,13 @@ def challenge_streak(who: str) -> int:
         n = c.execute(select(func.count(func.distinct(challenge.c.day)))
                       .where(challenge.c.who == who)).scalar()
     return int(n or 0)
+
+
+def stats() -> dict:
+    """Ops/diagnostics: which DB is live + row counts. 'postgresql' here means
+    DATABASE_URL is wired and uploads persist; 'sqlite' means ephemeral disk."""
+    with engine.begin() as c:
+        def n(t):
+            return int(c.execute(select(func.count()).select_from(t)).scalar() or 0)
+        return {"db": engine.url.get_backend_name(),
+                "posts": n(posts), "challenge": n(challenge), "sagak": n(sagak)}
