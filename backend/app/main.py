@@ -115,13 +115,16 @@ def _check_image(image: str) -> None:
 # ---------------- 제 ᄠᅳ들 · 대나무숲 / 그대에게 (손글씨 사진) ----------------
 class PostIn(BaseModel):
     kind: str            # "bamboo" | "letter"
-    image: str           # base64 data URL
+    image: str           # base64 data URL (손글씨 사진 또는 내 폰트로 렌더한 글)
+    text: str = ""       # 타이핑 게시일 때만: 원문. 저장 안 하고 키워드 검열에만 씀.
 
 
 @app.post("/api/posts")
 def create_post(p: PostIn) -> dict:
     if p.kind not in POST_KINDS:
         raise HTTPException(400, "invalid kind")
+    if p.text and _blocked(p.text):
+        raise HTTPException(400, "부적절한 표현이 포함되어 있어요.")
     _check_image(p.image)
     pid = store.add_post(p.kind, p.image)
     return {"id": pid, "status": "visible"}

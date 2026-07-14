@@ -122,6 +122,8 @@
   .crop-h.tl{left:-10px;top:-10px;cursor:nwse-resize;}.crop-h.tr{right:-10px;top:-10px;cursor:nesw-resize;}
   .crop-h.bl{left:-10px;bottom:-10px;cursor:nesw-resize;}.crop-h.br{right:-10px;bottom:-10px;cursor:nwse-resize;}
   .crop-foot{display:flex;gap:10px;margin-top:12px;align-items:center;}
+  .type-prev{align-self:stretch;width:100%;max-height:54dvh;overflow:auto;padding:22px;font-size:30px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
+  .type-input{margin-top:12px;width:100%;border:1px solid var(--hairline);border-radius:var(--r-nested);padding:12px 14px;font-family:var(--font);font-size:16px;line-height:1.5;resize:none;color:var(--ink);background:var(--canvas);box-sizing:border-box;}
   .btn.block{width:100%;justify-content:center;}
   .mindwrap{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-card);padding:8px;margin-top:6px;}
   .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
@@ -235,6 +237,55 @@ function openCropper(file,cb){
   img.src=URL.createObjectURL(file);
 }
 function uid(){let u=localStorage.getItem('sm_uid');if(!u){u='u'+Math.random().toString(36).slice(2,10);localStorage.setItem('sm_uid',u);}return u;}
+
+// ---- 내 손글씨 폰트 보관(IndexedDB) → 제 뜯을에서 타이핑용으로 재사용 ----
+// 폰트는 5MB라 localStorage엔 못 넣어 IndexedDB에 Blob으로 저장한다. 렌더용 이름은
+// 충돌/재빌드 문제를 피하려 매 저장마다 고유 alias를 부여한다.
+function _fontDB(){return new Promise((res,rej)=>{const r=indexedDB.open('ownfont',1);
+  r.onupgradeneeded=()=>r.result.createObjectStore('f');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function saveMyFont(rec){try{const db=await _fontDB();await new Promise((res,rej)=>{const t=db.transaction('f','readwrite');t.objectStore('f').put(rec,'my');t.oncomplete=res;t.onerror=()=>rej(t.error);});}catch(e){}}
+async function getMyFont(){try{const db=await _fontDB();return await new Promise(res=>{const t=db.transaction('f','readonly'),q=t.objectStore('f').get('my');q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null);});}catch(e){return null;}}
+let _myAlias=null;
+async function ensureMyFont(){const rec=await getMyFont();if(!rec)return null;
+  if(_myAlias!==rec.alias){const ff=new FontFace(rec.alias,`url(${URL.createObjectURL(rec.blob)})`);await ff.load();document.fonts.add(ff);_myAlias=rec.alias;}
+  return rec;}
+
+// 타이핑 → 내 폰트로 캔버스 렌더 → PNG data URL. cb(dataURL, text)
+function composeInMyFont(cb){(async()=>{
+  const rec=await ensureMyFont();
+  if(!rec){alert('먼저 ‘사맛디 › 폰트 만들기’에서 손글씨 폰트를 만들어 주세요.');return;}
+  const ov=document.createElement('div');ov.className='cropper';
+  ov.innerHTML=`<div class="crop-head"><span class="muted">내 폰트로 쓰기</span>
+      <div class="row"><button class="btn ghost" id="tyCancel">취소</button><button class="btn primary" id="tyOk">게시</button></div></div>
+    <div class="crop-stage"><div id="tyPrev" class="type-prev"></div></div>
+    <textarea id="tyText" class="type-input" rows="3" maxlength="140" placeholder="여기에 마음을 적어보세요"></textarea>`;
+  document.querySelector('.window').appendChild(ov);
+  const ta=ov.querySelector('#tyText'),prev=ov.querySelector('#tyPrev');
+  prev.style.fontFamily=`"${rec.alias}"`;
+  const sync=()=>{prev.textContent=ta.value||'여기에 마음을 적어보세요';};
+  ta.oninput=sync;sync();setTimeout(()=>ta.focus(),50);
+  ov.querySelector('#tyCancel').onclick=()=>ov.remove();
+  ov.querySelector('#tyOk').onclick=async()=>{const text=ta.value.trim();if(!text){ta.focus();return;}
+    await document.fonts.load(`48px "${rec.alias}"`);
+    ov.remove();cb(renderTextPNG(text,rec.alias),text);};
+})();}
+
+// 정사각형에 가까운 카드에 텍스트를 줄바꿈해 그린다 (흰 배경, 검정 글씨)
+function renderTextPNG(text,fam){
+  const W=900,PAD=90,maxW=W-PAD*2,c=document.createElement('canvas'),x=c.getContext('2d');
+  const wrap=size=>{x.font=`${size}px "${fam}"`;const out=[];
+    text.split('\n').forEach(para=>{if(!para){out.push('');return;}
+      let line='';for(const ch of para){const t=line+ch;
+        if(x.measureText(t).width>maxW&&line){out.push(line);line=ch;}else line=t;}
+      out.push(line);});return out;};
+  let size=60,lines=[],lh=90;
+  for(;size>=26;size-=2){lines=wrap(size);lh=size*1.5;if(lines.length*lh<=W-PAD*2)break;}
+  const H=Math.max(520,Math.min(1300,Math.round(lines.length*lh+PAD*2)));
+  c.width=W;c.height=H;x.fillStyle='#fff';x.fillRect(0,0,W,H);
+  x.fillStyle='#0a0a0a';x.font=`${size}px "${fam}"`;x.textBaseline='top';x.textAlign='left';
+  const startY=(H-lines.length*lh)/2;
+  lines.forEach((ln,i)=>x.fillText(ln,PAD,startY+i*lh));
+  return c.toDataURL('image/png');}
 
 // ---- 사각사각: 실생활 소리 (WebAudio 합성; 나중에 실제 녹음으로 교체 가능) ----
 let _ac; function actx(){_ac=_ac||new (window.AudioContext||window.webkitAudioContext)();if(_ac.state==='suspended')_ac.resume();return _ac;}
@@ -380,7 +431,8 @@ const STEPS={
     <div class="label">${ctx.name} · 마음의 지도</div>
     <div class="mindwrap"><svg id="brain" viewBox="0 0 400 300" width="100%"></svg></div>
     <div class="muted" style="text-align:center;margin-top:8px">점을 누르면 다른 사람의 손글씨가 열립니다</div>
-    <div class="foot"><button class="btn primary lg block" id="mine">✍️ 나도 쓰기</button><div id="mstatus"></div></div>`}),
+    <div class="foot"><button class="btn primary lg block" id="mine">✍️ 손글씨 사진으로</button>
+      <button class="btn ghost lg block" id="mineType" style="margin-top:8px">⌨️ 내 폰트로 타이핑</button><div id="mstatus"></div></div>`}),
 
   // ---------- 날로 씀에 편안케 : 챌린지 ----------
   nallo:()=>({crumb:'서문 › <b class="old">날로 ᄡᅮ메 편안킈</b>',html:`
@@ -420,7 +472,8 @@ const WIRE={
       try{const d=await api('/api/build',{method:'POST',body:fd});
         // 폰트를 응답에서 바로 Blob으로 → 서버 재시작과 무관하게 다운로드/미리보기 가능
         const bin=atob(d.font),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
-        const url=URL.createObjectURL(new Blob([u8],{type:d.fmt==='otf'?'font/otf':'font/ttf'}));
+        const blob=new Blob([u8],{type:d.fmt==='otf'?'font/otf':'font/ttf'}),url=URL.createObjectURL(blob);
+        saveMyFont({alias:'MyHand_'+Date.now(),family:d.family,fmt:d.fmt,blob});  // 제 뜯을 타이핑용으로 기억
         go('font_result',{url,family:d.family,fmt:d.fmt,filled:d.filled_cells,total:d.total_cells,syllables:d.syllables});}
       catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;bb.disabled=false;}};
   },
@@ -458,9 +511,11 @@ const WIRE={
       ov.querySelector('#rvRep').onclick=async()=>{if(!confirm('신고할까요? 즉시 숨겨집니다.'))return;try{await api(`/api/posts/${p.id}/report`,{method:'POST'});}catch(e){}ov.remove();load();};
       ov.querySelector('#rvNext').onclick=()=>{const o=posts.filter(x=>x.id!==p.id);ov.remove();if(o.length)reveal(o[Math.floor(Math.random()*o.length)]);};}
     async function load(){try{posts=(await api(`/api/posts/${ctx.kind}`)).posts;draw();}catch(e){}}
-    el.querySelector('#mine').onclick=()=>pickPhoto(async data=>{st.innerHTML=PEN;
-      try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:ctx.kind,image:data})});
-        st.innerHTML='<div class="note ok">지도에 더해졌어요</div>';load();}catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
+    const submit=async(data,text)=>{st.innerHTML=PEN;
+      try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:ctx.kind,image:data,text:text||''})});
+        st.innerHTML='<div class="note ok">지도에 더해졌어요</div>';load();}catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}};
+    el.querySelector('#mine').onclick=()=>pickPhoto(data=>submit(data,''));
+    el.querySelector('#mineType').onclick=()=>composeInMyFont((data,text)=>submit(data,text));
     load();
   },
   nallo:(el)=>{
