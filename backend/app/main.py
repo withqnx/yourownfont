@@ -17,8 +17,12 @@ from pydantic import BaseModel
 
 from . import store
 from .charset import WORDS
-from .pipeline import build_from_scan
-from .template import generate_template_pdf
+
+# NOTE: .pipeline (opencv/numpy/fonttools) and .template (reportlab) are heavy —
+# ~9s to import. They are lazy-imported inside the /api/build and /api/template
+# handlers so the app boots in ~1s and Render's 5s health check on / passes even
+# on a cold start (otherwise every free-tier wake trips a health-check-failed
+# email and the first visitor waits ~20s).
 
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "changeme")
 
@@ -45,7 +49,10 @@ app.mount("/assets", StaticFiles(directory=str(_FRONTEND_DIR / "assets")), name=
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> HTMLResponse:
-    return HTMLResponse(FRONTEND.read_text(encoding="utf-8"))
+    # no-store: the single-file app changes often during the event; never let a
+    # browser serve stale JS (e.g. an old api() without cold-start retry).
+    return HTMLResponse(FRONTEND.read_text(encoding="utf-8"),
+                        headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/diag")
@@ -56,6 +63,7 @@ def diag() -> dict:
 
 @app.get("/api/template")
 def template() -> Response:
+    from .template import generate_template_pdf  # lazy: pulls in reportlab
     pdf = generate_template_pdf()
     return Response(
         content=pdf,
@@ -75,6 +83,7 @@ async def build(files: list[UploadFile] = File(...),
     fmt = fmt.lower()
     if fmt not in ("ttf", "otf"):
         raise HTTPException(400, "fmt must be 'ttf' or 'otf'.")
+    from .pipeline import build_from_scan  # lazy: pulls in opencv/numpy/fonttools
     try:
         result = build_from_scan(images, family=family or "YourOwnFont", fmt=fmt)
     except ValueError as e:
