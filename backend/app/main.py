@@ -5,9 +5,9 @@ Serves the step-by-step wizard frontend and the font-maker API (사맛디 > 폰�
 """
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import os
-import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -36,10 +36,6 @@ def _blocked(text: str) -> bool:
     return any(w in t for w in BLOCKLIST)
 
 app = FastAPI(title="YourOwnFont")
-
-# In-memory store of built fonts: id -> (font_bytes, family, fmt). Fine for a
-# single process MVP; swap for object storage when persistence lands.
-_FONTS: dict[str, tuple[bytes, str, str]] = {}
 
 _FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 FRONTEND = _FRONTEND_DIR / "index.html"
@@ -89,31 +85,20 @@ async def build(files: list[UploadFile] = File(...),
     except ValueError as e:
         raise HTTPException(422, str(e))
 
-    font_id = uuid.uuid4().hex
-    _FONTS[font_id] = (result.font_bytes, result.family, result.fmt)
+    # Return the font inline (base64) so the client downloads it straight from
+    # this response. The old flow stashed it in a server-memory dict and handed
+    # back an id to fetch later — but any restart/redeploy or free-tier spin-down
+    # wiped that dict, so the later fetch 404'd ("Font not found or expired") and
+    # the browser saved the error JSON instead of the .ttf.
     return {
-        "id": font_id,
         "family": result.family,
         "fmt": result.fmt,
+        "font": base64.b64encode(result.font_bytes).decode("ascii"),
         "total_cells": result.total_cells,
         "filled_cells": result.filled_cells,
         "syllables": result.syllables,
         "pages": result.pages,
     }
-
-
-@app.get("/api/font/{font_id}")
-def font(font_id: str) -> Response:
-    entry = _FONTS.get(font_id)
-    if entry is None:
-        raise HTTPException(404, "Font not found or expired.")
-    font_bytes, family, fmt = entry
-    media = "font/otf" if fmt == "otf" else "font/ttf"
-    return Response(
-        content=font_bytes,
-        media_type=media,
-        headers={"Content-Disposition": f'attachment; filename="{family}.{fmt}"'},
-    )
 
 
 MAX_IMG = 3_000_000  # ~2.2MB decoded; handwriting photos are resized client-side

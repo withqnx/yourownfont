@@ -350,7 +350,7 @@ const STEPS={
   font_result:(ctx)=>({crumb:'사맛디 › 폰트 만들기',html:`
     <div class="label">3 · 완성</div><div class="note ok">${ctx.filled}/${ctx.total}칸 · 한글 ${Number(ctx.syllables).toLocaleString()}자</div>
     <div id="preview" contenteditable="true" spellcheck="false">내 손글씨로 만든 한글 0123</div>
-    <div class="foot actions"><a class="btn primary lg" href="${ctx.url}" download>다운로드</a><button class="btn ghost" onclick="reset('cover')">처음으로</button></div>`}),
+    <div class="foot actions"><a class="btn primary lg" href="${ctx.url}" download="${ctx.family}.${ctx.fmt}">다운로드</a><button class="btn ghost" onclick="reset('cover')">처음으로</button></div>`}),
 
   sagak:()=>({crumb:'사맛디 › 사각사각',html:`
     <div class="label">사각사각 · 소리를 글자로</div>
@@ -417,7 +417,11 @@ const WIRE={
     function sf(l){ch=[...l];fn.textContent=ch.length===1?ch[0].name:`${ch.length}개`;bb.disabled=false;}
     bb.onclick=async()=>{bb.disabled=true;st.innerHTML=PEN;
       const fd=new FormData();ch.forEach(f=>fd.append('files',f));fd.append('family',el.querySelector('#family').value||'내손글씨');fd.append('fmt',el.querySelector('#fmt').value);
-      try{const d=await api('/api/build',{method:'POST',body:fd});go('font_result',{url:`/api/font/${d.id}`,family:d.family,filled:d.filled_cells,total:d.total_cells,syllables:d.syllables});}
+      try{const d=await api('/api/build',{method:'POST',body:fd});
+        // 폰트를 응답에서 바로 Blob으로 → 서버 재시작과 무관하게 다운로드/미리보기 가능
+        const bin=atob(d.font),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+        const url=URL.createObjectURL(new Blob([u8],{type:d.fmt==='otf'?'font/otf':'font/ttf'}));
+        go('font_result',{url,family:d.family,fmt:d.fmt,filled:d.filled_cells,total:d.total_cells,syllables:d.syllables});}
       catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;bb.disabled=false;}};
   },
   font_result:(el,ctx)=>{const f=new FontFace(ctx.family,`url(${ctx.url})`);f.load().then(x=>{document.fonts.add(x);el.querySelector('#preview').style.fontFamily=`"${ctx.family}"`;});},
