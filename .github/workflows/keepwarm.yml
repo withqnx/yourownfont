@@ -1,0 +1,32 @@
+name: keep-warm
+
+# Render 무료 플랜은 15분 유휴 시 잠들고 깨는 데 시간이 걸린다(콜드스타트 →
+# health-check 실패 메일 + 첫 방문자 대기). 10분마다 핑을 보내 깨어 있게 한다.
+# 참고: GitHub 예약 워크플로는 최소 5분 간격이며 GitHub 부하 시 지연될 수 있다.
+# 완전히 확실한 keep-warm이 필요하면 cron-job.org 등 외부 핑을 병행하라.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # every 10 minutes
+  workflow_dispatch: {}       # 수동 실행 버튼
+
+# 동시 실행 방지(핑이 겹치지 않게)
+concurrency:
+  group: keep-warm
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping app until awake
+        run: |
+          URL="https://yourownfont.onrender.com/"
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL") || code=000
+            echo "attempt $i -> HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 20
+          done
+          echo "did not reach 200 (service may still be waking); not failing the job"
+          exit 0
