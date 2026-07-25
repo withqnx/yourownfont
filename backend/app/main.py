@@ -58,6 +58,12 @@ def diag() -> dict:
     return store.stats()
 
 
+@app.get("/api/wall")
+def wall() -> dict:
+    """함께 쓰는 벽 — 한 마디(challenge) + 편지(letter) 통합 피드 + 참여 수."""
+    return {"items": store.wall(), "count": store.wall_count()}
+
+
 @app.get("/api/template")
 def template() -> Response:
     from .template import generate_template_pdf  # lazy: pulls in reportlab

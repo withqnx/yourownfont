@@ -162,3 +162,27 @@ def stats() -> dict:
             return int(c.execute(select(func.count()).select_from(t)).scalar() or 0)
         return {"db": engine.url.get_backend_name(),
                 "posts": n(posts), "challenge": n(challenge), "sagak": n(sagak)}
+
+
+# ---------------- 함께 쓰는 벽 (한 마디 + 편지 통합 피드) ----------------
+def wall(limit: int = 40) -> list[dict]:
+    with engine.begin() as c:
+        ch = c.execute(select(challenge.c.image, challenge.c.prompt, challenge.c.created_at)
+                       .order_by(challenge.c.id.desc()).limit(limit)).all()
+        lt = c.execute(select(posts.c.image, posts.c.created_at)
+                       .where(posts.c.kind == "letter", posts.c.status == "visible")
+                       .order_by(posts.c.id.desc()).limit(limit)).all()
+    items = [{"image": r[0], "label": r[1] or "오늘의 한 마디",
+              "at": r[2].isoformat() if r[2] else ""} for r in ch]
+    items += [{"image": r[0], "label": "그대에게",
+               "at": r[1].isoformat() if r[1] else ""} for r in lt]
+    items.sort(key=lambda x: x["at"], reverse=True)
+    return items[:limit]
+
+
+def wall_count() -> int:
+    with engine.begin() as c:
+        n1 = c.execute(select(func.count()).select_from(challenge)).scalar() or 0
+        n2 = c.execute(select(func.count()).select_from(posts)
+                       .where(posts.c.kind == "letter", posts.c.status == "visible")).scalar() or 0
+    return int(n1) + int(n2)

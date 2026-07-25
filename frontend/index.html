@@ -479,28 +479,21 @@ const STEPS={
     <div class="foot"><button class="btn primary lg" onclick="go('hub')">다음 →</button></div>`}),
 
   hub:()=>({crumb:'서문',html:`
+    <div class="label" style="color:var(--mid)">제 손으로 · 만년필로 한 자 한 자, 쓸수록 더 나답게</div>
     <div class="choices" style="margin-top:8px">
-      <button class="choice" onclick="go('samatdi')"><div class="ct"><span class="title old">ᄉᆞᄆᆞᆺ디</span><span class="num">소통</span></div>
-        <div class="sub">소리와 문자가 통하다. 손글씨로 폰트를 만들고, 소리를 글자로 옮긴다.</div></button>
-      <button class="choice" onclick="go('jetteul')"><div class="ct"><span class="title old">ᄆᆞᄎᆞᆷ내 제 ᄠᅳ들</span><span class="num">표현</span></div>
-        <div class="sub">마침내 제 뜻을 펴다. 익명의 공간에 하고 싶던 말을 적는다.</div></button>
-      <button class="choice" onclick="go('nallo')"><div class="ct"><span class="title old">날로 ᄡᅮ메 편안킈</span><span class="num">편안</span></div>
-        <div class="sub">날로 씀에 편안케. 매일 한 단어씩 쓰는 챌린지.</div></button>
+      <button class="choice" onclick="go('rung1')"><div class="ct"><span class="title old">ᄉᆞᄆᆞᆺ디</span><span class="num">한 글자</span></div>
+        <div class="sub">오늘의 한 마디를 만년필로 써서 통하다. 첫 걸음.</div></button>
+      <button class="choice" onclick="go('rung2')"><div class="ct"><span class="title old">ᄆᆞᄎᆞᆷ내 제 ᄠᅳ들</span><span class="num">한 문장</span></div>
+        <div class="sub">마침내 제 뜻을 펴다. 한 문장·손편지를 써서 남긴다.</div></button>
+      <button class="choice" onclick="go('font_intro')"><div class="ct"><span class="title old">날로 ᄡᅮ메 편안킈</span><span class="num">한 벌</span></div>
+        <div class="sub">한 벌을 다 쓰면 내 손글씨가 폰트가 된다. 날로 씀에 편안케.</div></button>
+    </div>
+    <div class="row" style="margin-top:14px;gap:10px">
+      <button class="btn ghost block" onclick="go('wall')">🖼 함께 쓰는 벽</button>
+      <button class="btn ghost block" onclick="go('locker')">📁 내 보관함</button>
     </div>`}),
 
-  // ---------- 사맛디 : 정사각 인포그래픽 썸네일 ----------
-  samatdi:()=>({crumb:'서문 › <b class="old">ᄉᆞᄆᆞᆺ디</b>',html:`
-    <div class="label old">ᄉᆞᄆᆞᆺ디 · 소통</div>
-    <div class="thumbs">
-      <button class="thumb" onclick="go('font_intro')">
-        <div class="art">${ART.font}</div><div class="tt">폰트 만들기</div>
-        <div class="ts">내 손글씨가 진짜 폰트가 된다.</div><div class="go">만들러 가기 →</div></button>
-      <button class="thumb" onclick="go('sagak')">
-        <div class="art">${ART.sagak}</div><div class="tt">사각사각</div>
-        <div class="ts">의성어·의태어를 글자 카드로.</div><div class="go">써보러 가기 →</div></button>
-    </div>`}),
-
-  font_intro:()=>({crumb:'사맛디 › 폰트 만들기',html:`
+  font_intro:()=>({crumb:'날로 ᄡᅮ메 편안킈 › 폰트 만들기',html:`
     <div class="label">폰트 만들기 · 이렇게 진행돼요</div>
     <div class="carousel"><div class="track" id="track">
       ${SLIDES.map(s=>`<div class="slide"><div class="art">${s.art}</div><div class="cap">${s.cap}</div><div class="ssub">${s.sub}</div></div>`).join('')}
@@ -509,7 +502,7 @@ const STEPS={
     <div class="subcard row" style="justify-content:space-between"><span>글자 템플릿 PDF</span><a class="btn primary" href="/api/template" download>받기</a></div>
     <div class="foot"><button class="btn primary lg" onclick="go('font_upload')">다 썼어요, 올리기 →</button></div>`}),
 
-  font_upload:()=>({crumb:'사맛디 › 폰트 만들기',html:`
+  font_upload:()=>({crumb:'날로 ᄡᅮ메 편안킈 › 폰트 만들기',html:`
     <div class="label">2 · 스캔 올리기</div><div class="display">올리기</div>
     <div style="margin-top:16px">
       <div class="field"><label>폰트 이름</label><input class="input" id="family" value="내손글씨" /></div>
@@ -521,10 +514,11 @@ const STEPS={
       <div id="status"></div>
     </div>`}),
 
-  font_result:(ctx)=>({crumb:'사맛디 › 폰트 만들기',html:`
-    <div class="label">3 · 완성</div><div class="note ok">${ctx.filled}/${ctx.total}칸 · 한글 ${Number(ctx.syllables).toLocaleString()}자</div>
+  font_result:(ctx)=>({crumb:'날로 ᄡᅮ메 편안킈 › 폰트 만들기',html:`
+    <div class="label">완성 · 내 손글씨 폰트</div><div class="note ok">${ctx.filled}/${ctx.total}칸 · 한글 ${Number(ctx.syllables).toLocaleString()}자</div>
     <div id="preview" contenteditable="true" spellcheck="false">내 손글씨로 만든 한글 0123</div>
-    <div class="foot actions"><a class="btn primary lg" href="${ctx.url}" download="${ctx.family}.${ctx.fmt}">다운로드</a><button class="btn ghost" onclick="reset('cover')">처음으로</button></div>`}),
+    <div class="foot actions"><a class="btn primary lg" href="${ctx.url}" download="${ctx.family}.${ctx.fmt}">폰트 다운로드</a>
+      <button class="btn primary" id="fontCard">✍️ 내 폰트로 카드</button><button class="btn ghost" onclick="reset('cover')">처음으로</button></div>`}),
 
   sagak:()=>({crumb:'사맛디 › 사각사각',html:`
     <div class="label">사각사각 · 소리를 글자로</div>
@@ -539,34 +533,37 @@ const STEPS={
     <div class="row" style="margin-top:14px"><button class="btn primary" id="up">✍️ 써서 올리기</button><span class="muted" id="sstatus"></span></div>
     <div class="gallery" id="sgallery" style="margin-top:14px"></div>`}),
 
-  // ---------- 제 뜯 : 대나무숲 / 진심 ----------
-  jetteul:()=>({crumb:'서문 › <b class="old">제 ᄠᅳ들</b>',html:`
-    <div class="label old">ᄆᆞᄎᆞᆷ내 제 ᄠᅳ들 · 표현</div>
-    <div class="thumbs">
-      <button class="thumb" onclick="go('mindmap',{kind:'bamboo',name:'대나무숲'})"><div class="art">${ART.bamboo}</div><div class="tt">대나무숲</div>
-        <div class="ts">속 시원히 외치고 싶은 말.</div><div class="go">들어가기 →</div></button>
-      <button class="thumb" onclick="go('mindmap',{kind:'letter',name:'그대에게'})"><div class="art">${ART.letter}</div><div class="tt">그대에게</div>
-        <div class="ts">누군가에게 부치는 손편지.</div><div class="go">들어가기 →</div></button>
-    </div>
-    <p class="muted" style="margin-top:14px;line-height:1.6">모든 글은 만년필로 써서 사진으로 올립니다.</p>`}),
-
-  mindmap:(ctx)=>({crumb:`제 뜯 › ${ctx.name}`,html:`
-    <div class="label">${ctx.name} · 마음의 지도</div>
-    <div class="mindwrap"><svg id="brain" viewBox="0 0 400 300" width="100%"></svg></div>
-    <div class="muted" style="text-align:center;margin-top:8px">점을 누르면 다른 사람의 손글씨가 열립니다</div>
-    <div class="foot"><button class="btn primary lg block" id="mine">✍️ 손글씨 사진으로</button>
-      <button class="btn ghost lg block" id="mineType" style="margin-top:8px">⌨️ 내 폰트로 타이핑</button><div id="mstatus"></div></div>`}),
-
-  // ---------- 날로 씀에 편안케 : 챌린지 ----------
-  nallo:()=>({crumb:'서문 › <b class="old">날로 ᄡᅮ메 편안킈</b>',html:`
-    <div class="label old">날로 ᄡᅮ메 편안킈 · 챌린지</div>
-    <div class="subcard" style="text-align:center"><div class="muted">오늘의 단어</div>
+  // ---------- Rung 1 · 사맛디 : 오늘의 한 마디 (한 글자, 펜 사진 → 카드) ----------
+  rung1:()=>({crumb:'서문 › <b class="old">ᄉᆞᄆᆞᆺ디</b>',html:`
+    <div class="label old">ᄉᆞᄆᆞᆺ디 · 한 글자로 통하다</div>
+    <div class="subcard" style="text-align:center"><div class="muted">오늘의 한 마디</div>
       <div class="display" id="prompt" style="font-size:clamp(30px,8vw,44px);margin-top:6px">…</div></div>
-    <p class="muted" style="margin-top:12px">이 단어를 만년필로 써서 사진으로 올려주세요.</p>
+    <p class="muted" style="margin-top:12px">이 말을 <b>만년필로</b> 써서 사진으로 올려요. 낙관이 박힌 공유 카드가 만들어집니다.</p>
     <div class="row" style="margin-top:6px"><button class="btn primary" id="up">✍️ 써서 올리기</button>
-      <button class="btn ghost" id="tabBtn" style="margin-left:auto">🏆 Top 3</button></div>
+      <button class="btn ghost" onclick="go('wall')" style="margin-left:auto">🖼 함께 쓰는 벽</button></div>
     <div id="cstatus"></div>
-    <div class="gallery" id="wall" style="margin-top:14px"></div>`}),
+    <div class="subcard row" style="justify-content:space-between;margin-top:16px"><span class="muted">소리를 글자로 — 사각사각</span><button class="btn ghost" onclick="go('sagak')">가기 →</button></div>
+    <div class="note info" style="margin-top:12px">만년필이 처음이라면? <a href="https://hahasociety.com" target="_blank" rel="noopener"><b>하하소사이어티</b></a>에서 →</div>`}),
+
+  // ---------- Rung 2 · 제 뜯을 : 그대에게 (한 문장/편지, 펜 사진 → 카드) ----------
+  rung2:()=>({crumb:'서문 › <b class="old">제 ᄠᅳ들</b>',html:`
+    <div class="label old">ᄆᆞᄎᆞᆷ내 제 ᄠᅳ들 · 한 문장으로 펴다</div>
+    <p class="muted" style="margin-top:6px;line-height:1.7">누군가에게, 혹은 나에게. 하고 싶던 한 문장을 <b>만년필로</b> 써서 남겨요. 익명입니다.</p>
+    <div class="row" style="margin-top:10px"><button class="btn primary" id="up">✍️ 편지 써서 올리기</button>
+      <button class="btn ghost" onclick="go('wall')" style="margin-left:auto">🖼 함께 쓰는 벽</button></div>
+    <div id="lstatus"></div>
+    <div class="note info" style="margin-top:16px">만년필이 처음이라면? <a href="https://hahasociety.com" target="_blank" rel="noopener"><b>하하소사이어티</b></a>에서 →</div>`}),
+
+  // ---------- 함께 쓰는 벽 (통합 피드) ----------
+  wall:()=>({crumb:'함께 쓰는 벽',html:`
+    <div class="label">함께 쓰는 벽</div>
+    <div class="muted" id="wallCount">불러오는 중…</div>
+    <div class="gallery" id="wallGrid" style="margin-top:14px"></div>`}),
+
+  // ---------- 내 보관함 (IndexedDB) ----------
+  locker:()=>({crumb:'내 보관함',html:`
+    <div class="label">내 보관함</div>
+    <div id="lockerBody"><div class="muted">불러오는 중…</div></div>`}),
 
   admin:()=>({crumb:'관리자',html:`
     <div class="label">관리자 · 검토 대기</div>
@@ -610,7 +607,8 @@ const WIRE={
         go('font_result',{url,family:d.family,fmt:d.fmt,filled:d.filled_cells,total:d.total_cells,syllables:d.syllables});}
       catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;bb.disabled=false;}};
   },
-  font_result:(el,ctx)=>{const f=new FontFace(ctx.family,`url(${ctx.url})`);f.load().then(x=>{document.fonts.add(x);el.querySelector('#preview').style.fontFamily=`"${ctx.family}"`;});},
+  font_result:(el,ctx)=>{const f=new FontFace(ctx.family,`url(${ctx.url})`);f.load().then(x=>{document.fonts.add(x);el.querySelector('#preview').style.fontFamily=`"${ctx.family}"`;}).catch(()=>{});
+    const fc=el.querySelector('#fontCard');if(fc)fc.onclick=()=>composeInMyFont(async(_d,text)=>{showCardResult(await renderCard({text,fontAlias:ctx.family,pillar:'날로 ᄡᅮ메 편안킈',caption:'내 손글씨 폰트'}),'내 폰트 · 공유 카드');});},
   sagak:(el)=>{
     let i=0;const name=el.querySelector('#soundName'),st=el.querySelector('#sstatus'),g=el.querySelector('#sgallery');
     const cur=()=>SOUNDS[i];
@@ -625,47 +623,42 @@ const WIRE={
         st.innerHTML='<div class="note ok">올렸어요</div>';loadGallery();}catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
     show();
   },
-  mindmap:(el,ctx)=>{
-    const svg=el.querySelector('#brain'),st=el.querySelector('#mstatus'),NS='http://www.w3.org/2000/svg';let posts=[];
-    const mk=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
-    function draw(){svg.innerHTML='';const cx=200,cy=150,n=Math.min(Math.max(posts.length,6),16);
-      for(let i=0;i<n;i++){const ang=(i/n)*Math.PI*2,r=88+(i%3)*20,x=cx+Math.cos(ang)*r,y=cy+Math.sin(ang)*r*0.78;
-        svg.appendChild(mk('path',{d:`M${cx} ${cy} Q ${(cx+x)/2+Math.sin(ang)*18} ${(cy+y)/2} ${x} ${y}`,stroke:'#e5e5e5','stroke-width':1.6,fill:'none'}));
-        const has=posts[i],dot=mk('circle',{cx:x,cy:y,r:has?11:6,fill:has?'#0a0a0a':'#d4d4d4',style:'cursor:'+(has?'pointer':'default')});
-        if(has)dot.addEventListener('click',()=>reveal(has));svg.appendChild(dot);}
-      svg.appendChild(mk('circle',{cx,cy,r:24,fill:'#e7000b'}));
-      const t=mk('text',{x:cx,y:cy+6,'text-anchor':'middle',fill:'#fff','font-size':16,'font-family':'Paperlogy','font-weight':'700'});t.textContent=posts.length;svg.appendChild(t);}
-    function reveal(p){const ov=document.createElement('div');ov.className='cropper';
-      ov.innerHTML=`<div class="crop-head"><span class="muted">${ctx.name}</span><button class="btn ghost" id="rvX">닫기</button></div>
-        <div class="crop-stage"><img src="${p.image}" style="max-width:100%;max-height:54dvh;border-radius:8px"></div>
-        <div class="crop-foot"><button class="btn ghost" id="rvRep">신고</button><button class="btn primary" id="rvNext" style="margin-left:auto">다른 글 보기</button></div>`;
-      document.querySelector('.window').appendChild(ov);
-      ov.querySelector('#rvX').onclick=()=>ov.remove();
-      ov.querySelector('#rvRep').onclick=async()=>{if(!confirm('신고할까요? 즉시 숨겨집니다.'))return;try{await api(`/api/posts/${p.id}/report`,{method:'POST'});}catch(e){}ov.remove();load();};
-      ov.querySelector('#rvNext').onclick=()=>{const o=posts.filter(x=>x.id!==p.id);ov.remove();if(o.length)reveal(o[Math.floor(Math.random()*o.length)]);};}
-    async function load(){try{posts=(await api(`/api/posts/${ctx.kind}`)).posts;draw();}catch(e){}}
-    const submit=async(data,text)=>{st.innerHTML=PEN;
-      try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:ctx.kind,image:data,text:text||''})});
-        st.innerHTML='<div class="note ok">지도에 더해졌어요</div>';load();}catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}};
-    el.querySelector('#mine').onclick=()=>pickPhoto(data=>submit(data,''));
-    el.querySelector('#mineType').onclick=()=>composeInMyFont((data,text)=>submit(data,text));
-    load();
-  },
-  nallo:(el)=>{
-    const wall=el.querySelector('#wall'),st=el.querySelector('#cstatus'),tab=el.querySelector('#tabBtn');let top=false;
-    api('/api/challenge/today').then(d=>{el.querySelector('#prompt').textContent=d.prompt;});
-    const card=(e,rank)=>`<div class="gcard">${rank?`<div class="rank">${rank}위</div>`:''}<img src="${e.image}" loading="lazy">
-      <div class="bar"><span class="muted">${esc(e.prompt||'')}</span><button class="like" onclick="likeC(${e.id},this)">♥ ${e.likes||0}</button></div></div>`;
-    async function loadWall(){try{const d=await api('/api/challenge/wall');wall.innerHTML=d.entries.map(e=>card(e)).join('')||'<div class="muted">첫 기록을 남겨보세요.</div>';}catch(e){}}
-    async function loadTop(){try{const d=await api('/api/challenge/top');wall.innerHTML=d.top.map((e,i)=>card(e,i+1)).join('')||'<div class="muted">아직 없어요.</div>';}catch(e){}}
-    tab.onclick=()=>{top=!top;tab.textContent=top?'전체 보기':'🏆 Top 3';top?loadTop():loadWall();};
+  rung1:(el)=>{  // 오늘의 한 마디 (한 글자 펜 사진 → 카드)
+    const st=el.querySelector('#cstatus');
+    api('/api/challenge/today').then(d=>{el.querySelector('#prompt').textContent=d.prompt;}).catch(()=>{});
     el.querySelector('#up').onclick=()=>pickPhoto(async data=>{st.innerHTML=PEN;
-      try{const d=await api('/api/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({who:uid(),image:data})});
-        st.innerHTML=`<div class="note ok">🔥 ${d.streak}일째 · 올렸어요</div>`;top=false;tab.textContent='🏆 Top 3';loadWall();
+      try{await api('/api/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({who:uid(),image:data})});
+        st.innerHTML='<div class="note ok">올렸어요 · 벽에 더해졌어요</div>';
         const prompt=(el.querySelector('#prompt').textContent||'').trim();
-        showCardResult(await renderCard({photo:data,pillar:'날로 ᄡᅮ메 편안킈',caption:prompt?('오늘의 한 마디 · '+prompt):'오늘의 한 마디'}),'오늘의 한 마디 · 공유 카드');}
+        showCardResult(await renderCard({photo:data,pillar:'ᄉᆞᄆᆞᆺ디',caption:prompt?('오늘의 한 마디 · '+prompt):'오늘의 한 마디'}),'공유 카드');}
       catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
-    loadWall();
+  },
+  rung2:(el)=>{  // 그대에게 (한 문장/편지 펜 사진 → 카드)
+    const st=el.querySelector('#lstatus');
+    el.querySelector('#up').onclick=()=>pickPhoto(async data=>{st.innerHTML=PEN;
+      try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'letter',image:data,text:''})});
+        st.innerHTML='<div class="note ok">올렸어요 · 벽에 더해졌어요</div>';
+        showCardResult(await renderCard({photo:data,pillar:'제 ᄠᅳ들',caption:'그대에게'}),'공유 카드');}
+      catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
+  },
+  wall:(el)=>{
+    const grid=el.querySelector('#wallGrid'),cnt=el.querySelector('#wallCount');
+    (async()=>{try{const d=await api('/api/wall');
+      cnt.textContent=`${(d.count||0).toLocaleString()}명이 함께 썼어요`;
+      grid.innerHTML=(d.items||[]).map(e=>`<div class="gcard"><img src="${e.image}" loading="lazy"><div class="bar"><span class="muted">${esc(e.label||'')}</span></div></div>`).join('')||'<div class="muted">첫 글씨를 남겨보세요.</div>';}
+    catch(e){cnt.textContent='';grid.innerHTML='<div class="note err">불러오지 못했어요</div>';}})();
+  },
+  locker:(el)=>{
+    const b=el.querySelector('#lockerBody');
+    (async()=>{const rec=await getMyFont();
+      if(!rec){b.innerHTML=`<div class="muted">아직 만든 폰트가 없어요. 한 벌을 다 쓰면 내 손글씨가 폰트가 됩니다.</div>
+        <div class="foot"><button class="btn primary lg" onclick="go('font_intro')">내 손글씨 폰트 만들기 →</button></div>`;return;}
+      b.innerHTML=`<div class="subcard"><div style="font-weight:700">${esc(rec.family||'내 손글씨')} <span class="muted">· ${rec.fmt||'ttf'}</span></div>
+        <div id="lockPrev" style="font-size:34px;margin-top:10px;line-height:1.5">내 손글씨로 쓰는 한글 0123</div></div>
+        <div class="foot actions"><button class="btn primary lg" id="lockCard">✍️ 내 폰트로 카드 쓰기</button><button class="btn ghost" onclick="go('font_intro')">다시 만들기</button></div>`;
+      try{await ensureMyFont();el.querySelector('#lockPrev').style.fontFamily=`"${rec.alias}"`;}catch(e){}
+      el.querySelector('#lockCard').onclick=()=>composeInMyFont(async(_d,text)=>{showCardResult(await renderCard({text,fontAlias:rec.alias,pillar:'날로 ᄡᅮ메 편안킈',caption:'내 손글씨 폰트'}),'내 폰트 · 공유 카드');});
+    })();
   },
   admin:(el)=>{
     const q=el.querySelector('#queue'),st=el.querySelector('#qstatus');
