@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import base64
 import datetime as dt
+import json
 import os
 from pathlib import Path
 
@@ -68,10 +69,21 @@ def template() -> Response:
     )
 
 
+@app.post("/api/detect-corners")
+async def detect_corners_ep(file: UploadFile = File(...)) -> dict:
+    """Best-effort auto-detect of a page's four corner markers, to pre-position
+    the client's draggable corner handles. Returns null when it can't find them —
+    the user then places the corners by hand (so alignment never hard-fails)."""
+    data = await file.read()
+    from .scan import decode_image, detect_corners  # lazy: opencv
+    return {"corners": detect_corners(decode_image(data))}
+
+
 @app.post("/api/build")
 async def build(files: list[UploadFile] = File(...),
                 family: str = Form("YourOwnFont"),
-                fmt: str = Form("ttf")) -> dict:
+                fmt: str = Form("ttf"),
+                corners: str = Form("")) -> dict:
     images = [await f.read() for f in files]
     images = [b for b in images if b]
     if not images:
@@ -79,9 +91,16 @@ async def build(files: list[UploadFile] = File(...),
     fmt = fmt.lower()
     if fmt not in ("ttf", "otf"):
         raise HTTPException(400, "fmt must be 'ttf' or 'otf'.")
+    parsed_corners = None
+    if corners.strip():
+        try:
+            parsed_corners = json.loads(corners)  # per-page: [[x,y]x4] | null
+        except ValueError:
+            raise HTTPException(400, "invalid corners payload.")
     from .pipeline import build_from_scan  # lazy: pulls in opencv/numpy/fonttools
     try:
-        result = build_from_scan(images, family=family or "YourOwnFont", fmt=fmt)
+        result = build_from_scan(images, family=family or "YourOwnFont", fmt=fmt,
+                                 corners=parsed_corners)
     except ValueError as e:
         raise HTTPException(422, str(e))
 

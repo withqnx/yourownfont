@@ -96,15 +96,41 @@ def _detect_markers(gray: np.ndarray) -> np.ndarray:
     return _order_corners(np.array(chosen, dtype=np.float32))
 
 
-def align(image_bgr: np.ndarray) -> np.ndarray:
-    """Perspective-correct the scan to the canonical A4 pixel space (returns gray)."""
-    gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
-    src = _detect_markers(gray)
+def _warp_to_canon(gray: np.ndarray, src: np.ndarray) -> np.ndarray:
     dst = np.array([_pt_to_px(x, y) for x, y in marker_centers()], dtype=np.float32)
     H = cv2.getPerspectiveTransform(src, dst)
     return cv2.warpPerspective(gray, H, (CANON_W, CANON_H),
                                flags=cv2.INTER_LINEAR,
                                borderValue=255)
+
+
+def align(image_bgr: np.ndarray) -> np.ndarray:
+    """Perspective-correct the scan to the canonical A4 pixel space (returns gray).
+
+    Auto path: raises ValueError if the four corner markers can't be found.
+    """
+    gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
+    return _warp_to_canon(gray, _detect_markers(gray))
+
+
+def detect_corners(image_bgr: np.ndarray) -> list[list[float]] | None:
+    """Best-effort auto-detect of the four fiducial centers (TL,TR,BR,BL) in the
+    ORIGINAL image's pixel space. Returns None instead of raising when it can't —
+    the client then asks the user to tap the four corners manually."""
+    try:
+        gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
+        pts = _detect_markers(gray)
+    except ValueError:
+        return None
+    return [[float(x), float(y)] for x, y in pts]
+
+
+def align_from_corners(image_bgr: np.ndarray, src_pts) -> np.ndarray:
+    """Perspective-correct using user-tapped corners (image px). Never fails on
+    marker detection — the four points come straight from the client."""
+    gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
+    src = _order_corners(np.array(src_pts, dtype=np.float32))
+    return _warp_to_canon(gray, src)
 
 
 def _binarize(gray: np.ndarray) -> np.ndarray:
@@ -128,9 +154,13 @@ def _render_cell(cell: np.ndarray, cell_w_px: int) -> tuple[np.ndarray, bool]:
     return out, is_blank
 
 
-def extract_cells(image_bgr: np.ndarray, boxes) -> list[ExtractedCell]:
-    """Full ingestion for ONE page: align, binarize, cut out its placed boxes."""
-    aligned = align(image_bgr)
+def extract_cells(image_bgr: np.ndarray, boxes, corners=None) -> list[ExtractedCell]:
+    """Full ingestion for ONE page: align, binarize, cut out its placed boxes.
+
+    ``corners`` (four [x,y] in image px, user-tapped) forces manual alignment;
+    otherwise auto marker detection is used.
+    """
+    aligned = align_from_corners(image_bgr, corners) if corners else align(image_bgr)
     binary = _binarize(aligned)
 
     if not boxes:

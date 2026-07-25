@@ -124,6 +124,7 @@
   .crop-foot{display:flex;gap:10px;margin-top:12px;align-items:center;}
   .type-prev{align-self:stretch;width:100%;max-height:54dvh;overflow:auto;padding:22px;font-size:30px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;}
   .type-input{margin-top:12px;width:100%;border:1px solid var(--hairline);border-radius:var(--r-nested);padding:12px 14px;font-family:var(--font);font-size:16px;line-height:1.5;resize:none;color:var(--ink);background:var(--canvas);box-sizing:border-box;}
+  .cc-h{position:absolute;width:26px;height:26px;transform:translate(-50%,-50%);border-radius:50%;background:rgba(255,255,255,.92);border:2.5px solid var(--ember);box-shadow:0 1px 5px rgba(0,0,0,.35);touch-action:none;cursor:grab;z-index:3;}
   .btn.block{width:100%;justify-content:center;}
   .mindwrap{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-card);padding:8px;margin-top:6px;}
   .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
@@ -237,6 +238,56 @@ function openCropper(file,cb){
   img.src=URL.createObjectURL(file);
 }
 function uid(){let u=localStorage.getItem('sm_uid');if(!u){u='u'+Math.random().toString(36).slice(2,10);localStorage.setItem('sm_uid',u);}return u;}
+
+// ---- 폰트 템플릿: 페이지별 네 모서리 맞추기 (자동 검출 실패해도 손으로 → 정렬이 절대 하드실패 안 함) ----
+// resolve: 이미지 원본 픽셀 좌표의 네 점 [[x,y]*4] (TL,TR,BR,BL 근처), 취소 시 null
+function confirmCorners(file, pageLabel){return new Promise(resolve=>{
+  const img=new Image();
+  img.onload=async()=>{
+    const nW=img.naturalWidth,nH=img.naturalHeight;
+    let auto=null;
+    try{const fd=new FormData();fd.append('file',file);const d=await api('/api/detect-corners',{method:'POST',body:fd});auto=d.corners;}catch(e){}
+    const ov=document.createElement('div');ov.className='cropper';
+    ov.innerHTML=`<div class="crop-head"><span class="muted">${pageLabel} · 모서리 맞추기</span>
+        <div class="row"><button class="btn ghost" id="ccCancel">취소</button><button class="btn primary" id="ccOk">확인</button></div></div>
+      <div class="crop-stage"><div class="crop-imgwrap" id="ccWrap"></div></div>
+      <div class="crop-foot"><span class="muted">검은 모서리 사각형 4곳에 점을 맞춰주세요 · 자동으로 못 잡으면 손으로 끌어 조정</span></div>`;
+    document.querySelector('.window').appendChild(ov);
+    const wrap=ov.querySelector('#ccWrap');
+    // 검증된 크롭퍼와 동일하게 캔버스로 표시(=레이아웃 안정), 좌표는 이미지 분수(0~1)로 저장
+    const cv=document.createElement('canvas');cv.width=nW;cv.height=nH;cv.getContext('2d').drawImage(img,0,0);
+    cv.style.touchAction='none';cv.style.display='block';
+    // flex 안 세로 이미지가 0폭으로 접히지 않게: max-*를 끄고 뷰포트 기준 표시 크기를 명시
+    cv.style.maxWidth='none';cv.style.maxHeight='none';
+    const availW=((document.querySelector('.window')||document.body).clientWidth||window.innerWidth)-48;
+    const availH=window.innerHeight*0.52;
+    const sc=Math.min(1,availW/nW,availH/nH)||0.2;
+    cv.style.width=(nW*sc)+'px';cv.style.height=(nH*sc)+'px';
+    wrap.appendChild(cv);
+    const clamp=v=>Math.min(1,Math.max(0,v));
+    const pts=(auto&&auto.length===4)?auto.map(p=>[clamp(p[0]/nW),clamp(p[1]/nH)])
+                                      :[[.08,.08],[.92,.08],[.92,.92],[.08,.92]];
+    const NS='http://www.w3.org/2000/svg',svg=document.createElementNS(NS,'svg');
+    svg.setAttribute('viewBox','0 0 1 1');svg.setAttribute('preserveAspectRatio','none');
+    svg.setAttribute('style','position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none');
+    const poly=document.createElementNS(NS,'polygon');
+    poly.setAttribute('fill','rgba(231,0,11,.08)');poly.setAttribute('stroke','#e7000b');
+    poly.setAttribute('stroke-width','1.5');poly.setAttribute('vector-effect','non-scaling-stroke');
+    svg.appendChild(poly);wrap.appendChild(svg);
+    const drawQuad=()=>poly.setAttribute('points',pts.map(p=>`${p[0]},${p[1]}`).join(' '));
+    function mkHandle(i){const h=document.createElement('div');h.className='cc-h';wrap.appendChild(h);
+      const place=()=>{h.style.left=(pts[i][0]*100)+'%';h.style.top=(pts[i][1]*100)+'%';};place();
+      const move=e=>{const r=cv.getBoundingClientRect();
+        pts[i]=[clamp((e.clientX-r.left)/r.width),clamp((e.clientY-r.top)/r.height)];place();drawQuad();};
+      const end=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end);};
+      h.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);});
+    }
+    [0,1,2,3].forEach(mkHandle);drawQuad();
+    ov.querySelector('#ccCancel').onclick=()=>{ov.remove();resolve(null);};
+    ov.querySelector('#ccOk').onclick=()=>{ov.remove();resolve(pts.map(p=>[Math.round(p[0]*nW),Math.round(p[1]*nH)]));};
+  };
+  img.src=URL.createObjectURL(file);
+});}
 
 // ---- 내 손글씨 폰트 보관(IndexedDB) → 제 뜯을에서 타이핑용으로 재사용 ----
 // 폰트는 5MB라 localStorage엔 못 넣어 IndexedDB에 Blob으로 저장한다. 렌더용 이름은
@@ -394,6 +445,7 @@ const STEPS={
       <div class="field"><label>형식</label><select id="fmt"><option value="ttf">TTF</option><option value="otf">OTF</option></select></div>
       <div class="drop" id="drop">모든 쪽 이미지를 끌어놓거나 클릭 (여러 장)</div>
       <input type="file" id="file" accept="image/*" multiple hidden />
+      <div class="note info" style="margin-top:10px">📸 <b>네 모서리의 검은 사각형</b>이 모두 보이게, 밝은 곳에서 반듯하게 찍어주세요. 다음 단계에서 모서리를 직접 맞출 수 있어요.</div>
       <div class="row" style="margin-top:12px"><button class="btn primary" id="buildBtn" disabled>만들기</button><span class="muted" id="fname"></span></div>
       <div id="status"></div>
     </div>`}),
@@ -467,8 +519,18 @@ const WIRE={
     drop.addEventListener('drop',ev=>{if(ev.dataTransfer.files.length)sf(ev.dataTransfer.files);});
     fi.onchange=()=>{if(fi.files.length)sf(fi.files);};
     function sf(l){ch=[...l];fn.textContent=ch.length===1?ch[0].name:`${ch.length}개`;bb.disabled=false;}
-    bb.onclick=async()=>{bb.disabled=true;st.innerHTML=PEN;
+    bb.onclick=async()=>{bb.disabled=true;
+      // 페이지마다 모서리 맞추기 → 정렬 실패(마커 못 찾음)로 죽던 문제 해결
+      const corners=[];
+      for(let i=0;i<ch.length;i++){
+        st.innerHTML=`<div class="note info">모서리 맞추기 ${i+1}/${ch.length}…</div>`;
+        const c=await confirmCorners(ch[i], ch.length>1?`${i+1}쪽`:'스캔');
+        if(c===null){st.innerHTML='';bb.disabled=false;return;}  // 취소
+        corners.push(c);
+      }
+      st.innerHTML=PEN;
       const fd=new FormData();ch.forEach(f=>fd.append('files',f));fd.append('family',el.querySelector('#family').value||'내손글씨');fd.append('fmt',el.querySelector('#fmt').value);
+      fd.append('corners',JSON.stringify(corners));
       try{const d=await api('/api/build',{method:'POST',body:fd});
         // 폰트를 응답에서 바로 Blob으로 → 서버 재시작과 무관하게 다운로드/미리보기 가능
         const bin=atob(d.font),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);

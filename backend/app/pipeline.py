@@ -84,7 +84,9 @@ def _pick(store: Store, idx: int, belts: list[str]):
 
 
 def build_from_scan(images: list[bytes], family: str = "YourOwnFont",
-                    fmt: str = "ttf") -> BuildResult:
+                    fmt: str = "ttf", corners: list | None = None) -> BuildResult:
+    """``corners``: optional per-page list; corners[p] is either None (auto marker
+    detection) or four [x,y] points (user-tapped, in that page image's pixels)."""
     if not images:
         raise ValueError("No template pages were uploaded.")
 
@@ -99,7 +101,8 @@ def build_from_scan(images: list[bytes], family: str = "YourOwnFont",
         if p >= n_pages:
             break
         image = decode_image(img_bytes)
-        for ec in extract_cells(image, template.page_boxes(p)):
+        page_corners = corners[p] if corners and p < len(corners) and corners[p] else None
+        for ec in extract_cells(image, template.page_boxes(p), corners=page_corners):
             total_cells += 1
             if ec.is_blank:
                 continue
