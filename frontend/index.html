@@ -3,7 +3,23 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>2026 한글날</title>
+<title>2026 한글날 · 제 손으로 — 하하소사이어티</title>
+<meta name="description" content="훈민정음 반포 580년, 가갸날 100년. 만년필로 한 자 한 자, 제 손으로 쓰는 2026 한글날." />
+<meta name="theme-color" content="#e7000b" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="하하소사이어티" />
+<meta property="og:title" content="2026 한글날 · 제 손으로" />
+<meta property="og:description" content="훈민정음 580년·가갸날 100년. 만년필로, 제 손으로 쓰는 한글날." />
+<meta property="og:url" content="https://yourownfont.onrender.com/" />
+<meta property="og:image" content="https://yourownfont.onrender.com/assets/og.png" />
+<meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" />
+<meta property="og:locale" content="ko_KR" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="2026 한글날 · 제 손으로" />
+<meta name="twitter:description" content="만년필로, 제 손으로 쓰는 한글날." />
+<meta name="twitter:image" content="https://yourownfont.onrender.com/assets/og.png" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23e7000b'/%3E%3Ccircle%20cx='16'%20cy='16'%20r='5'%20fill='white'/%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="/assets/icon-180.png" />
 <style>
   @font-face{font-family:"Paperlogy";font-weight:100;src:url("/assets/fonts/Paperlogy-1Thin.ttf") format("truetype");font-display:swap;}
   @font-face{font-family:"Paperlogy";font-weight:400;src:url("/assets/fonts/Paperlogy-4Regular.ttf") format("truetype");font-display:swap;}
@@ -338,6 +354,60 @@ function renderTextPNG(text,fam){
   lines.forEach((ln,i)=>x.fillText(ln,PAD,startY+i*lh));
   return c.toDataURL('image/png');}
 
+// ---- 공유 카드: 펜 손글씨 사진(또는 내 폰트 글) → 하하소사이어티 낙관이 박힌 공유 이미지 ----
+const CAMPAIGN='2026 한글날 · 훈민정음 반포 580년 · 가갸날 100년';
+const loadImage=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});
+function dataURLtoBlob(u){const [h,b]=u.split(',');const m=h.match(/:(.*?);/)[1],bin=atob(b),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:m});}
+function _roundRect(x,X,Y,w,h,r){x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath();}
+
+// opts: {photo?:dataURL, text?, fontAlias?, pillar?, caption?} → 1080x1350 canvas
+async function renderCard(opts){
+  const o=opts||{},W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  await document.fonts.ready;
+  try{await document.fonts.load('900 40px "Paperlogy"');if(o.pillar)await document.fonts.load('40px "NMJyet"');if(o.fontAlias)await document.fonts.load(`80px "${o.fontAlias}"`);}catch(e){}
+  x.fillStyle='#ffffff';x.fillRect(0,0,W,H);
+  x.strokeStyle='#ececec';x.lineWidth=2;x.strokeRect(24,24,W-48,H-48);
+  x.textAlign='left';x.textBaseline='top';
+  if(o.pillar){x.fillStyle='#e7000b';x.font='40px "NMJyet",serif';x.fillText(o.pillar,90,80);}
+  if(o.caption){x.fillStyle='#737373';x.font='500 30px "Paperlogy"';x.fillText(o.caption,90,o.pillar?142:90);}
+  const cy0=210,cx0=90,cw=W-180,ch=H-210-250;
+  if(o.photo){const img=await loadImage(o.photo);const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;
+    const r=Math.min(cw/iw,ch/ih),dw=iw*r,dh=ih*r;x.drawImage(img,cx0+(cw-dw)/2,cy0+(ch-dh)/2,dw,dh);}
+  else if(o.text){const fam=o.fontAlias||'Paperlogy';
+    const wrap=s=>{x.font=`${s}px "${fam}"`;const out=[];String(o.text).split('\n').forEach(p=>{if(!p){out.push('');return;}let ln='';for(const chr of p){const t=ln+chr;if(x.measureText(t).width>cw&&ln){out.push(ln);ln=chr;}else ln=t;}out.push(ln);});return out;};
+    let size=96,lines=[],lh=140;for(;size>=40;size-=4){lines=wrap(size);lh=size*1.5;if(lines.length*lh<=ch)break;}
+    x.fillStyle='#0a0a0a';x.font=`${size}px "${fam}"`;x.textAlign='center';x.textBaseline='middle';
+    const sy=cy0+ch/2-(lines.length-1)*lh/2;lines.forEach((ln,i)=>x.fillText(ln,W/2,sy+i*lh));x.textAlign='left';x.textBaseline='top';}
+  const fy=H-190;                                   // 낙관 + 워드마크 + 캠페인
+  x.fillStyle='#e7000b';_roundRect(x,90,fy,84,84,18);x.fill();
+  x.fillStyle='#fff';x.font='900 46px "Paperlogy"';x.textAlign='center';x.textBaseline='middle';x.fillText('하',132,fy+45);
+  x.textAlign='left';x.fillStyle='#0a0a0a';x.font='900 40px "Paperlogy"';x.textBaseline='alphabetic';x.fillText('하하소사이어티',196,fy+40);
+  x.fillStyle='#737373';x.font='26px "Paperlogy"';x.fillText(CAMPAIGN,196,fy+78);
+  return c;}
+
+async function shareCard(canvas, filename){
+  const url=canvas.toDataURL('image/png'),file=new File([dataURLtoBlob(url)],filename||'haha-hangeul.png',{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],text:CAMPAIGN});return 'shared';}catch(e){if(e&&e.name==='AbortError')return 'cancelled';}}
+  const a=document.createElement('a');a.href=url;a.download=filename||'haha-hangeul.png';document.body.appendChild(a);a.click();a.remove();return 'downloaded';}
+
+// 완성 카드 미리보기 + 저장/공유 오버레이
+function showCardResult(canvas, subtitle){
+  const ov=document.createElement('div');ov.className='cropper';
+  ov.innerHTML=`<div class="crop-head"><span class="muted">${subtitle||'완성 · 공유 카드'}</span><button class="btn ghost" id="cardClose">닫기</button></div>
+    <div class="crop-stage"><div class="crop-imgwrap" id="cardWrap"></div></div>
+    <div class="crop-foot"><button class="btn primary block" id="cardShare">저장 · 공유</button></div>`;
+  document.querySelector('.window').appendChild(ov);
+  canvas.style.maxWidth='none';canvas.style.maxHeight='none';canvas.style.display='block';
+  const availW=((document.querySelector('.window')||document.body).clientWidth||window.innerWidth)-48,availH=window.innerHeight*0.52;
+  const sc=Math.min(1,availW/canvas.width,availH/canvas.height)||0.3;
+  canvas.style.width=(canvas.width*sc)+'px';canvas.style.height=(canvas.height*sc)+'px';
+  ov.querySelector('#cardWrap').appendChild(canvas);
+  ov.querySelector('#cardClose').onclick=()=>ov.remove();
+  ov.querySelector('#cardShare').onclick=()=>shareCard(canvas,'하하소사이어티-한글날.png');
+}
+window.renderCard=renderCard;window.shareCard=shareCard;window.showCardResult=showCardResult;
+
 // ---- 사각사각: 실생활 소리 (WebAudio 합성; 나중에 실제 녹음으로 교체 가능) ----
 let _ac; function actx(){_ac=_ac||new (window.AudioContext||window.webkitAudioContext)();if(_ac.state==='suspended')_ac.resume();return _ac;}
 function noiseBuf(c,d){const b=c.createBuffer(1,Math.floor(c.sampleRate*d),c.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;return b;}
@@ -389,6 +459,7 @@ const SLIDES=[
 
 const STEPS={
   cover:()=>({crumb:'',html:`
+    <div class="brandmark" style="position:static;top:auto;left:auto;margin-bottom:2px">하하소사이어티<span style="color:var(--ember)">.</span></div>
     <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
       <div class="cover-year old">2026</div><div class="cover-day old">한글날</div>
       <div class="muted" style="margin-top:22px;font-size:15px">훈민정음 반포 580년 · 가갸날 100년</div>
@@ -590,7 +661,9 @@ const WIRE={
     tab.onclick=()=>{top=!top;tab.textContent=top?'전체 보기':'🏆 Top 3';top?loadTop():loadWall();};
     el.querySelector('#up').onclick=()=>pickPhoto(async data=>{st.innerHTML=PEN;
       try{const d=await api('/api/challenge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({who:uid(),image:data})});
-        st.innerHTML=`<div class="note ok">🔥 ${d.streak}일째 · 올렸어요</div>`;top=false;tab.textContent='🏆 Top 3';loadWall();}
+        st.innerHTML=`<div class="note ok">🔥 ${d.streak}일째 · 올렸어요</div>`;top=false;tab.textContent='🏆 Top 3';loadWall();
+        const prompt=(el.querySelector('#prompt').textContent||'').trim();
+        showCardResult(await renderCard({photo:data,pillar:'날로 ᄡᅮ메 편안킈',caption:prompt?('오늘의 한 마디 · '+prompt):'오늘의 한 마디'}),'오늘의 한 마디 · 공유 카드');}
       catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
     loadWall();
   },
