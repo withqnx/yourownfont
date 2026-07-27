@@ -619,11 +619,19 @@ const STEPS={
     <div class="sec-sub">소리를 닮은, 소리를 담은 글자, 한글</div>
     <div class="sec-desc">다음 들리는 소리를 한글로 표현해보세요.</div>
     <div class="subcard" style="text-align:center;margin-top:16px">
-      <div id="soundName" class="muted">‘체험하기’를 눌러 소리를 들어보세요</div>
+      <div id="soundName" class="muted">🔊 를 눌러 소리를 들어보세요</div>
       <div class="row" style="justify-content:center;margin-top:12px">
         <button class="btn ghost" id="prev">‹</button>
-        <button class="btn primary" id="playBtn">🔊 체험하기</button>
+        <button class="btn primary" id="playBtn" aria-label="소리 듣기" style="font-size:26px;min-width:72px;border-radius:999px">🔊</button>
         <button class="btn ghost" id="next">›</button></div>
+    </div>
+    <div class="subcard" style="margin-top:12px;text-align:left">
+      <div style="font-weight:800;margin-bottom:8px">이렇게 해보세요</div>
+      <div class="muted" style="line-height:1.95">
+        <b>1 · 소리 듣기</b> — 🔊를 눌러 들어요. 원래 글자가 없던 소리예요.<br>
+        <b>2 · 만년필로 그리기</b> — 정답은 없어요. ‘솨아’, ‘토도독’처럼 내 귀에 들린 대로.<br>
+        <b>3 · 사진 올리기</b> — 아래에 다른 사람들의 ‘소리 글씨’와 별처럼 모여요.
+      </div>
     </div>
     <button class="btn primary block" id="up" style="margin-top:12px">✍️ 소리를 만년필로 써서 올리기</button>
     <div id="sstatus"></div>
