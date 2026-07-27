@@ -70,6 +70,10 @@
   .hero-title .cover-day{font-size:clamp(26px,6.5vw,46px);}
   .hero-img{display:block;margin:4px auto 0;height:auto;width:auto;max-height:20vh;max-width:50%;
     object-fit:contain;filter:drop-shadow(0 8px 22px rgba(0,0,0,.14));}
+  .hero-hint{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:12.5px;color:var(--mid);
+    pointer-events:none;z-index:2;animation:hintpulse 2.6s ease-in-out infinite;}
+  .hero-hint b{color:var(--ember);font-weight:700;}
+  @keyframes hintpulse{0%,100%{opacity:.55}50%{opacity:1}}
   .lead{font-family:var(--old);font-size:18px;color:var(--ink-soft);line-height:1.95;margin-top:18px;word-break:keep-all;}
   .lead .hl{border-bottom:2px solid var(--ember);padding-bottom:1px;}
   .muted{color:var(--mid);font-size:14px;}
@@ -422,27 +426,30 @@ window.renderCard=renderCard;window.shareCard=shareCard;window.showCardResult=sh
 // (또렷한 옛한글 원문은 서문 화면에서 나눔명조 옛한글로 별도 표시)
 const SEOMUN_LINES=["나랏말싸미 듕귁에 달아","문짜와로 서르 사맛디 아니할쌔","이런 젼차로 어린 백셩이 니르고져 홀 빼이셔도","마참내 제 뜨들 시러 펴디 몯할 노미 하니라","내 이랄 위하야 어엿비 너겨","날로 쑤메 편안킈 하고져 할 따라미니라"];
 function mountCurtain(cv, slot){
-  const CH=SEOMUN_LINES.join("  ").replace(/\s/g,"").split("");
+  const FULL=SEOMUN_LINES.join("  ").replace(/\s/g,""), CH=FULL.split("");
+  // 발 속 세 구절만 볼드(붉게)로 강조 → 누르면 그 메뉴로. (누르다 스치면 발이 흔들림)
+  const TARGETS=[{txt:"사맛디",go:"rung1"},{txt:"제뜨들",go:"rung2"},{txt:"편안킈",go:"font_soon"}];
+  const tag=new Array(CH.length).fill(null);
+  for(const t of TARGETS){const p=FULL.indexOf(t.txt);if(p>=0)for(let k=0;k<t.txt.length;k++)tag[p+k]=t.go;}
   const x=cv.getContext('2d');
-  // 움직임은 덜하게(PUSH 작게, RADIUS 좁게), 정착은 스프링감 있게(FRIC 높여 진자처럼 쫀득하게 가라앉음)
-  let FS=22,SP=FS*1.2,RADIUS=70;
-  const GRAV=0.10,FRIC=0.93,ITER=4,PUSH=2.8;
-  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false;
+  let FS=20,SP=FS*1.3,RADIUS=60;
+  const GRAV=0.10,FRIC=0.93,ITER=4,PUSH=2.6;
+  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null;
   function layout(){
     DPR=Math.min(2,window.devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;if(!W||!H)return false;
     cv.width=W*DPR;cv.height=H*DPR;x.setTransform(DPR,0,0,DPR,0,0);
-    FS=Math.round(Math.max(18,Math.min(30,W/16)));SP=FS*1.28;RADIUS=FS*3.2;   // 발을 크게
+    FS=Math.round(Math.max(15,Math.min(26,W/18.5)));SP=FS*1.3;RADIUS=FS*3;   // 발 ~87%로 축소
     const cr=cv.getBoundingClientRect(), ir=slot.getBoundingClientRect();
-    const topY=Math.max(0,ir.bottom-cr.top-2);            // 동상 바로 아래에서 시작
-    let bandW=W*0.92, bandX=W*0.04;                       // 동상보다 넓게 = 발이 더 크게(주인공)
-    const maxLen=Math.max(4,Math.floor((H-topY-4)/SP));   // 화면에 들어가는 세로 글자 수
-    let N=Math.max(1,Math.ceil(CH.length/maxLen));        // 언해본 전체가 딱 들어갈 열 수
-    if(bandW/N<FS*1.05){FS=Math.max(12,Math.floor(bandW/N/1.05));SP=FS*1.28;RADIUS=FS*3.2;} // 폭에 맞춰 축소
+    const topY=Math.max(0,ir.bottom-cr.top-2);
+    let bandW=W*0.80, bandX=(W-bandW)/2;                  // 폭 80%, 가운데
+    const maxLen=Math.max(4,Math.floor((H-topY-4)/SP));
+    let N=Math.max(1,Math.ceil(CH.length/maxLen));
+    if(bandW/N<FS*1.05){FS=Math.max(12,Math.floor(bandW/N/1.05));SP=FS*1.3;RADIUS=FS*3;}
     cols=[];let idx=0;
     for(let ci=0;ci<N && idx<CH.length;ci++){
       const colX=bandX+bandW-(ci+0.5)*(bandW/N);          // 우→좌 (언해본 원본 세로쓰기)
       const len=Math.min(maxLen, CH.length-idx);
-      const pts=[];for(let i=0;i<len;i++){pts.push({x:colX,y:topY+i*SP,px:colX,py:topY+i*SP,ch:CH[idx]});idx++;}
+      const pts=[];for(let i=0;i<len;i++){pts.push({x:colX,y:topY+i*SP,px:colX,py:topY+i*SP,ch:CH[idx],g:tag[idx]});idx++;}
       if(len>0)cols.push({x0:colX,y0:topY,pts});
     }
     return true;
@@ -460,19 +467,33 @@ function mountCurtain(cv, slot){
       P[0].x=col.x0;P[0].y=col.y0;
     }
   }
+  function glyph(p,i,len,alpha){    // 볼드 구절은 붉게·크게·살짝 맥동(눌러보라는 신호), 나머지는 은은히
+    if(p.g){const fs=Math.round(FS*1.32*(1+0.06*Math.sin(T*2.4)));
+      x.font='900 '+fs+'px "EBSHunmin","Paperlogy",serif';x.fillStyle='rgba(231,0,11,'+alpha.toFixed(3)+')';}
+    else{const op=Math.max(0.32,0.95-(i/Math.max(1,len-1))*0.58)*alpha;
+      x.font=FS+'px "EBSHunmin","Paperlogy",serif';x.fillStyle='rgba(20,18,15,'+op.toFixed(3)+')';}
+    x.fillText(p.ch,0,0);
+  }
   function draw(){
-    x.clearRect(0,0,W,H);x.font=FS+'px "EBSHunmin","Paperlogy",serif';x.textAlign='center';x.textBaseline='middle';
+    x.clearRect(0,0,W,H);x.textAlign='center';x.textBaseline='middle';
     for(const col of cols){const P=col.pts;
-      for(let i=0;i<P.length;i++){const p=P[i];                       // i=0(첫 글자)부터 그림
-        let ang=0;if(i>0){const pr=P[i-1];ang=(Math.atan2(p.y-pr.y,p.x-pr.x)-Math.PI/2)*0.12;}
-        const op=Math.max(0.35,0.95-(i/Math.max(1,P.length-1))*0.55); // 아래도 읽히게 약한 페이드
-        x.save();x.translate(p.x,p.y);if(ang)x.rotate(ang);x.fillStyle='rgba(20,18,15,'+op.toFixed(3)+')';x.fillText(p.ch,0,0);x.restore();}
+      for(let i=0;i<P.length;i++){const p=P[i];let ang=0;if(i>0){const pr=P[i-1];ang=(Math.atan2(p.y-pr.y,p.x-pr.x)-Math.PI/2)*0.12;}
+        x.save();x.translate(p.x,p.y);if(ang)x.rotate(ang);glyph(p,i,P.length,1);x.restore();}
     }
   }
-  function loop(){if(!document.body.contains(cv))return;step();draw();requestAnimationFrame(loop);}
-  cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;active=true;});
+  function drawPart(){              // 발을 젖히고 문으로 들어가듯 좌우로 갈라지며 페이드 → 메뉴 진입
+    const D=580,e=Math.min(1,(performance.now()-partT0)/D),ease=e<0.5?2*e*e:1-Math.pow(-2*e+2,2)/2,cx=W/2;
+    x.clearRect(0,0,W,H);x.textAlign='center';x.textBaseline='middle';
+    for(const col of cols){const P=col.pts,dir=col.x0<cx?-1:1,shift=dir*ease*W*0.62;
+      for(let i=0;i<P.length;i++){const p=P[i];x.save();x.translate(p.x+shift,p.y);glyph(p,i,P.length,1-ease);x.restore();}}
+    if(e>=1&&partGo){const g=partGo;partGo=null;if(window.go)window.go(g);}
+  }
+  function hit(mx,my){let best=null,bd=1e9;for(const col of cols)for(const p of col.pts){if(!p.g)continue;const d=Math.hypot(p.x-mx,p.y-my);if(d<bd){bd=d;best=p;}}return (best&&bd<FS*1.7)?best.g:null;}
+  function loop(){if(!document.body.contains(cv))return;T+=0.016;if(parting)drawPart();else{step();draw();}requestAnimationFrame(loop);}
+  cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;mouse.x=mx;mouse.y=my;active=true;cv.style.cursor=hit(mx,my)?'pointer':'default';});
   cv.addEventListener('pointerleave',()=>{active=false;mouse.x=mouse.y=-1e4;});
-  let ro; if(window.ResizeObserver){ro=new ResizeObserver(()=>layout());ro.observe(cv);}
+  cv.addEventListener('click',e=>{if(parting)return;const r=cv.getBoundingClientRect();const g=hit(e.clientX-r.left,e.clientY-r.top);if(g){parting=true;partT0=performance.now();partGo=g;}});
+  let ro; if(window.ResizeObserver){ro=new ResizeObserver(()=>{if(!parting)layout();});ro.observe(cv);}
   (async()=>{try{await document.fonts.load('16px "EBSHunmin"');await document.fonts.load('16px "Paperlogy"');}catch(e){}
     if(slot.tagName==='IMG'&&!slot.complete){await new Promise(r=>{slot.onload=r;slot.onerror=r;});}
     let tries=0;(function w(){if(layout()||tries++>60)loop();else requestAnimationFrame(w);})();})();
@@ -536,8 +557,13 @@ const STEPS={
         <div class="muted" style="margin-top:6px;font-size:13px">훈민정음 반포 580년 · 가갸날 100년</div>
         <img class="hero-img" id="heroImg" src="/assets/sejong.png" alt="세종대왕 동상" />
       </div>
+      <div class="hero-hint">✦ 발을 헤치고 <b>붉은 글자</b>를 눌러 들어가요</div>
     </div>
-    <div class="foot"><button class="btn primary lg" onclick="go('preface')">들어가기 →</button></div>`}),
+    <div class="foot actions" style="justify-content:center">
+      <button class="btn ghost" onclick="go('wall')">🖼 함께 쓰는 벽</button>
+      <button class="btn ghost" onclick="go('locker')">📁 내 보관함</button>
+      <button class="btn ghost" onclick="go('preface')">서문</button>
+    </div>`}),
 
   preface:()=>({crumb:'처음으로',html:`
     <div class="label">훈민정음 언해</div>
