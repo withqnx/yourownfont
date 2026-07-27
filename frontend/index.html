@@ -418,7 +418,9 @@ window.renderCard=renderCard;window.shareCard=shareCard;window.showCardResult=sh
 
 // ---- 히어로 커튼: 세종대왕(슬롯) 아래로 언해본이 발처럼 매달림 ----
 // 평소엔 완전히 정지. 마우스로 쓰다듬을 때만 발이 아주 조금 따라 흔들린다. 글꼴=EBS 훈민정음(옛한글은 NMJyet 폴백).
-const SEOMUN_LINES=["나랏말ᄊᆞ미 듕귁에 달아","문ᄍᆞ와로 서르 ᄉᆞᄆᆞᆺ디 아니ᄒᆞᆯᄊᆡ","이런 젼ᄎᆞ로 어린 ᄇᆡᆨ셩이 니르고져 홇 배 이셔도","ᄆᆞᄎᆞᆷ내 제 ᄠᅳ들 시러 펴디 몯ᄒᆞᇙ 노미 하니라","내 이ᄅᆞᆯ 위ᄒᆞ야 어엿비 너겨","날로 ᄡᅮ메 편안킈 ᄒᆞ고져 ᄒᆞᇙ ᄯᆞᄅᆞ미니라"];
+// 커튼용 = 언해본 현대 표기 전사본(아래아·첫가끝을 현대 음절로) → EBS가 음절을 깔끔히 조합.
+// (또렷한 옛한글 원문은 서문 화면에서 나눔명조 옛한글로 별도 표시)
+const SEOMUN_LINES=["나랏말싸미 듕귁에 달아","문짜와로 서르 사맛디 아니할쌔","이런 젼차로 어린 백셩이 니르고져 홀 빼이셔도","마참내 제 뜨들 시러 펴디 몯할 노미 하니라","내 이랄 위하야 어엿비 너겨","날로 쑤메 편안킈 하고져 할 따라미니라"];
 function mountCurtain(cv, slot){
   const CH=SEOMUN_LINES.join("  ").replace(/\s/g,"").split("");
   const x=cv.getContext('2d');
@@ -459,7 +461,7 @@ function mountCurtain(cv, slot){
     }
   }
   function draw(){
-    x.clearRect(0,0,W,H);x.font=FS+'px "EBSHunmin","NMJyet",serif';x.textAlign='center';x.textBaseline='middle';
+    x.clearRect(0,0,W,H);x.font=FS+'px "EBSHunmin","Paperlogy",serif';x.textAlign='center';x.textBaseline='middle';
     for(const col of cols){const P=col.pts;
       for(let i=0;i<P.length;i++){const p=P[i];                       // i=0(첫 글자)부터 그림
         let ang=0;if(i>0){const pr=P[i-1];ang=(Math.atan2(p.y-pr.y,p.x-pr.x)-Math.PI/2)*0.12;}
@@ -471,7 +473,7 @@ function mountCurtain(cv, slot){
   cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;active=true;});
   cv.addEventListener('pointerleave',()=>{active=false;mouse.x=mouse.y=-1e4;});
   let ro; if(window.ResizeObserver){ro=new ResizeObserver(()=>layout());ro.observe(cv);}
-  (async()=>{try{await document.fonts.load('16px "EBSHunmin"');await document.fonts.load('16px "NMJyet"');}catch(e){}
+  (async()=>{try{await document.fonts.load('16px "EBSHunmin"');await document.fonts.load('16px "Paperlogy"');}catch(e){}
     if(slot.tagName==='IMG'&&!slot.complete){await new Promise(r=>{slot.onload=r;slot.onerror=r;});}
     let tries=0;(function w(){if(layout()||tries++>60)loop();else requestAnimationFrame(w);})();})();
 }
