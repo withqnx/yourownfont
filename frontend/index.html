@@ -3,11 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>2026 한글날 · 제 손으로 — 하하소사이어티</title>
+<title>2026 한글날 · 제 손으로</title>
 <meta name="description" content="훈민정음 반포 580년, 가갸날 100년. 만년필로 한 자 한 자, 제 손으로 쓰는 2026 한글날." />
 <meta name="theme-color" content="#e7000b" />
 <meta property="og:type" content="website" />
-<meta property="og:site_name" content="하하소사이어티" />
 <meta property="og:title" content="2026 한글날 · 제 손으로" />
 <meta property="og:description" content="훈민정음 580년·가갸날 100년. 만년필로, 제 손으로 쓰는 한글날." />
 <meta property="og:url" content="https://yourownfont.onrender.com/" />
@@ -354,7 +353,7 @@ function renderTextPNG(text,fam){
   lines.forEach((ln,i)=>x.fillText(ln,PAD,startY+i*lh));
   return c.toDataURL('image/png');}
 
-// ---- 공유 카드: 펜 손글씨 사진(또는 내 폰트 글) → 하하소사이어티 낙관이 박힌 공유 이미지 ----
+// ---- 공유 카드: 펜 손글씨 사진(또는 내 폰트 글) → 공유 이미지 ----
 const CAMPAIGN='2026 한글날 · 훈민정음 반포 580년 · 가갸날 100년';
 const loadImage=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});
 function dataURLtoBlob(u){const [h,b]=u.split(',');const m=h.match(/:(.*?);/)[1],bin=atob(b),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return new Blob([a],{type:m});}
@@ -378,18 +377,17 @@ async function renderCard(opts){
     let size=96,lines=[],lh=140;for(;size>=40;size-=4){lines=wrap(size);lh=size*1.5;if(lines.length*lh<=ch)break;}
     x.fillStyle='#0a0a0a';x.font=`${size}px "${fam}"`;x.textAlign='center';x.textBaseline='middle';
     const sy=cy0+ch/2-(lines.length-1)*lh/2;lines.forEach((ln,i)=>x.fillText(ln,W/2,sy+i*lh));x.textAlign='left';x.textBaseline='top';}
-  const fy=H-190;                                   // 낙관 + 워드마크 + 캠페인
-  x.fillStyle='#e7000b';_roundRect(x,90,fy,84,84,18);x.fill();
-  x.fillStyle='#fff';x.font='900 46px "Paperlogy"';x.textAlign='center';x.textBaseline='middle';x.fillText('하',132,fy+45);
-  x.textAlign='left';x.fillStyle='#0a0a0a';x.font='900 40px "Paperlogy"';x.textBaseline='alphabetic';x.fillText('하하소사이어티',196,fy+40);
-  x.fillStyle='#737373';x.font='26px "Paperlogy"';x.fillText(CAMPAIGN,196,fy+78);
+  const fy=H-140;                                   // 브랜드 없이: 액센트 + 캠페인만
+  x.fillStyle='#e7000b';_roundRect(x,90,fy,54,10,5);x.fill();
+  x.fillStyle='#0a0a0a';x.font='900 36px "Paperlogy"';x.textAlign='left';x.textBaseline='top';x.fillText('2026 한글날',90,fy+28);
+  x.fillStyle='#737373';x.font='24px "Paperlogy"';x.fillText('훈민정음 반포 580년 · 가갸날 100년',90,fy+76);
   return c;}
 
 async function shareCard(canvas, filename){
-  const url=canvas.toDataURL('image/png'),file=new File([dataURLtoBlob(url)],filename||'haha-hangeul.png',{type:'image/png'});
+  const url=canvas.toDataURL('image/png'),file=new File([dataURLtoBlob(url)],filename||'hangeul-card.png',{type:'image/png'});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
     try{await navigator.share({files:[file],text:CAMPAIGN});return 'shared';}catch(e){if(e&&e.name==='AbortError')return 'cancelled';}}
-  const a=document.createElement('a');a.href=url;a.download=filename||'haha-hangeul.png';document.body.appendChild(a);a.click();a.remove();return 'downloaded';}
+  const a=document.createElement('a');a.href=url;a.download=filename||'hangeul-card.png';document.body.appendChild(a);a.click();a.remove();return 'downloaded';}
 
 // 완성 카드 미리보기 + 저장/공유 오버레이
 function showCardResult(canvas, subtitle){
@@ -404,7 +402,7 @@ function showCardResult(canvas, subtitle){
   canvas.style.width=(canvas.width*sc)+'px';canvas.style.height=(canvas.height*sc)+'px';
   ov.querySelector('#cardWrap').appendChild(canvas);
   ov.querySelector('#cardClose').onclick=()=>ov.remove();
-  ov.querySelector('#cardShare').onclick=()=>shareCard(canvas,'하하소사이어티-한글날.png');
+  ov.querySelector('#cardShare').onclick=()=>shareCard(canvas,'한글날-카드.png');
 }
 window.renderCard=renderCard;window.shareCard=shareCard;window.showCardResult=showCardResult;
 
@@ -459,7 +457,6 @@ const SLIDES=[
 
 const STEPS={
   cover:()=>({crumb:'',html:`
-    <div class="brandmark" style="position:static;top:auto;left:auto;margin-bottom:2px">하하소사이어티<span style="color:var(--ember)">.</span></div>
     <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
       <div class="cover-year old">2026</div><div class="cover-day old">한글날</div>
       <div class="muted" style="margin-top:22px;font-size:15px">훈민정음 반포 580년 · 가갸날 100년</div>
@@ -485,13 +482,23 @@ const STEPS={
         <div class="sub">오늘의 한 마디를 만년필로 써서 통하다. 첫 걸음.</div></button>
       <button class="choice" onclick="go('rung2')"><div class="ct"><span class="title old">ᄆᆞᄎᆞᆷ내 제 ᄠᅳ들</span><span class="num">한 문장</span></div>
         <div class="sub">마침내 제 뜻을 펴다. 한 문장·손편지를 써서 남긴다.</div></button>
-      <button class="choice" onclick="go('font_intro')"><div class="ct"><span class="title old">날로 ᄡᅮ메 편안킈</span><span class="num">한 벌</span></div>
-        <div class="sub">한 벌을 다 쓰면 내 손글씨가 폰트가 된다. 날로 씀에 편안케.</div></button>
+      <button class="choice" onclick="go('font_soon')"><div class="ct"><span class="title old">날로 ᄡᅮ메 편안킈</span><span class="num">곧 열려요</span></div>
+        <div class="sub">한 벌을 다 쓰면 내 손글씨가 폰트가 된다. 날로 씀에 편안케. <b>(준비 중)</b></div></button>
     </div>
     <div class="row" style="margin-top:14px;gap:10px">
       <button class="btn ghost block" onclick="go('wall')">🖼 함께 쓰는 벽</button>
       <button class="btn ghost block" onclick="go('locker')">📁 내 보관함</button>
     </div>`}),
+
+  // 폰트 만들기 일시정지 — 메뉴는 유지, 실제 플로우(font_intro/upload/result)는 코드로 보존
+  font_soon:()=>({crumb:'날로 ᄡᅮ메 편안킈',html:`
+    <div class="label old">날로 ᄡᅮ메 편안킈</div>
+    <div class="subcard" style="text-align:center;padding:30px 18px">
+      <div style="font-size:44px">🖋️</div>
+      <div style="font-weight:700;margin-top:10px">폰트 만들기 · 곧 열려요</div>
+      <p class="muted" style="margin-top:8px;line-height:1.7">내 손글씨가 진짜 폰트가 되는 기능을 준비하고 있어요.<br>조금만 기다려 주세요.</p>
+    </div>
+    <div class="foot"><button class="btn ghost lg" onclick="go('hub')">돌아가기</button></div>`}),
 
   font_intro:()=>({crumb:'날로 ᄡᅮ메 편안킈 › 폰트 만들기',html:`
     <div class="label">폰트 만들기 · 이렇게 진행돼요</div>
@@ -650,10 +657,10 @@ const WIRE={
     const b=el.querySelector('#lockerBody');
     (async()=>{const rec=await getMyFont();
       if(!rec){b.innerHTML=`<div class="muted">아직 만든 폰트가 없어요. 한 벌을 다 쓰면 내 손글씨가 폰트가 됩니다.</div>
-        <div class="foot"><button class="btn primary lg" onclick="go('font_intro')">내 손글씨 폰트 만들기 →</button></div>`;return;}
+        <div class="foot"><button class="btn primary lg" onclick="go('font_soon')">내 손글씨 폰트 만들기 →</button></div>`;return;}
       b.innerHTML=`<div class="subcard"><div style="font-weight:700">${esc(rec.family||'내 손글씨')} <span class="muted">· ${rec.fmt||'ttf'}</span></div>
         <div id="lockPrev" style="font-size:34px;margin-top:10px;line-height:1.5">내 손글씨로 쓰는 한글 0123</div></div>
-        <div class="foot actions"><button class="btn primary lg" id="lockCard">✍️ 내 폰트로 카드 쓰기</button><button class="btn ghost" onclick="go('font_intro')">다시 만들기</button></div>`;
+        <div class="foot actions"><button class="btn primary lg" id="lockCard">✍️ 내 폰트로 카드 쓰기</button><button class="btn ghost" onclick="go('font_soon')">다시 만들기</button></div>`;
       try{await ensureMyFont();el.querySelector('#lockPrev').style.fontFamily=`"${rec.alias}"`;}catch(e){}
       el.querySelector('#lockCard').onclick=()=>composeInMyFont(async(_d,text)=>{showCardResult(await renderCard({text,fontAlias:rec.alias,pillar:'날로 ᄡᅮ메 편안킈',caption:'내 손글씨 폰트'}),'내 폰트 · 공유 카드');});
     })();
