@@ -429,17 +429,19 @@ function mountCurtain(cv, slot){
   function layout(){
     DPR=Math.min(2,window.devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;if(!W||!H)return false;
     cv.width=W*DPR;cv.height=H*DPR;x.setTransform(DPR,0,0,DPR,0,0);
-    FS=Math.round(Math.max(18,Math.min(30,W/16)));SP=FS*1.2;RADIUS=FS*3.2;   // 발을 크게
+    FS=Math.round(Math.max(18,Math.min(30,W/16)));SP=FS*1.28;RADIUS=FS*3.2;   // 발을 크게
     const cr=cv.getBoundingClientRect(), ir=slot.getBoundingClientRect();
-    const topY=Math.max(0,ir.bottom-cr.top-4);            // 동상 바로 아래에서 시작
-    const bandW=W*0.9, bandX=W*0.05;                      // 동상보다 넓게 = 발이 더 크게(주인공)
-    const N=Math.max(8,Math.round(bandW/(FS*1.3))), maxLen=Math.max(6,Math.floor((H-topY)/SP));
+    const topY=Math.max(0,ir.bottom-cr.top-2);            // 동상 바로 아래에서 시작
+    let bandW=W*0.92, bandX=W*0.04;                       // 동상보다 넓게 = 발이 더 크게(주인공)
+    const maxLen=Math.max(4,Math.floor((H-topY-4)/SP));   // 화면에 들어가는 세로 글자 수
+    let N=Math.max(1,Math.ceil(CH.length/maxLen));        // 언해본 전체가 딱 들어갈 열 수
+    if(bandW/N<FS*1.05){FS=Math.max(12,Math.floor(bandW/N/1.05));SP=FS*1.28;RADIUS=FS*3.2;} // 폭에 맞춰 축소
     cols=[];let idx=0;
-    for(let ci=0;ci<N;ci++){
-      const colX=bandX+bandW-(ci+0.5)*(bandW/N);          // 우→좌 (언해본 원본 세로쓰기 방향)
-      const len=Math.max(4,Math.round(maxLen*(0.5+Math.random()*0.5)));
-      const pts=[];for(let i=0;i<len;i++){pts.push({x:colX,y:topY+i*SP,px:colX,py:topY+i*SP,ch:CH[idx%CH.length]});idx++;}
-      cols.push({x0:colX,y0:topY,pts});
+    for(let ci=0;ci<N && idx<CH.length;ci++){
+      const colX=bandX+bandW-(ci+0.5)*(bandW/N);          // 우→좌 (언해본 원본 세로쓰기)
+      const len=Math.min(maxLen, CH.length-idx);
+      const pts=[];for(let i=0;i<len;i++){pts.push({x:colX,y:topY+i*SP,px:colX,py:topY+i*SP,ch:CH[idx]});idx++;}
+      if(len>0)cols.push({x0:colX,y0:topY,pts});
     }
     return true;
   }
@@ -459,9 +461,10 @@ function mountCurtain(cv, slot){
   function draw(){
     x.clearRect(0,0,W,H);x.font=FS+'px "EBSHunmin","NMJyet",serif';x.textAlign='center';x.textBaseline='middle';
     for(const col of cols){const P=col.pts;
-      for(let i=1;i<P.length;i++){const p=P[i],pr=P[i-1],ang=Math.atan2(p.y-pr.y,p.x-pr.x)-Math.PI/2;
-        const op=Math.max(0.05,0.9-(i/P.length)*0.85);
-        x.save();x.translate(p.x,p.y);x.rotate(ang*0.3);x.fillStyle='rgba(20,18,15,'+op.toFixed(3)+')';x.fillText(p.ch,0,0);x.restore();}
+      for(let i=0;i<P.length;i++){const p=P[i];                       // i=0(첫 글자)부터 그림
+        let ang=0;if(i>0){const pr=P[i-1];ang=(Math.atan2(p.y-pr.y,p.x-pr.x)-Math.PI/2)*0.12;}
+        const op=Math.max(0.35,0.95-(i/Math.max(1,P.length-1))*0.55); // 아래도 읽히게 약한 페이드
+        x.save();x.translate(p.x,p.y);if(ang)x.rotate(ang);x.fillStyle='rgba(20,18,15,'+op.toFixed(3)+')';x.fillText(p.ch,0,0);x.restore();}
     }
   }
   function loop(){if(!document.body.contains(cv))return;step();draw();requestAnimationFrame(loop);}
