@@ -37,7 +37,7 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
   body{font-family:var(--font);color:var(--ink);background:var(--canvas);-webkit-font-smoothing:antialiased;
-    line-height:1.5;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;overflow-x:hidden;}
+    line-height:1.5;min-height:100dvh;display:flex;align-items:safe center;justify-content:center;padding:24px;position:relative;overflow-x:hidden;}
   .backdrop{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
   .backdrop b{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--font);
     font-weight:900;font-size:min(62vw,900px);color:#ececec;letter-spacing:-.05em;white-space:nowrap;user-select:none;}
@@ -166,6 +166,9 @@
   .sec-title{font-family:"EBSHunmin","Paperlogy",serif;font-weight:900;font-size:clamp(46px,14vw,88px);letter-spacing:-.02em;line-height:1;text-align:center;color:var(--ink);margin-top:8px;}
   .sec-sub{text-align:center;font-weight:700;font-size:clamp(16px,4.5vw,19px);margin-top:14px;color:var(--ink);word-break:keep-all;}
   .sec-desc{text-align:center;color:var(--mid);font-size:14px;line-height:1.6;margin-top:6px;word-break:keep-all;}
+  .how-step{margin-top:14px;}
+  .how-t{font-weight:800;font-size:16px;color:var(--ink);}
+  .how-d{font-weight:400;font-size:13px;color:var(--mid);line-height:1.6;margin-top:4px;word-break:keep-all;}
   .scatter{position:relative;width:100%;height:44dvh;margin-top:12px;overflow:hidden;}
   .scatter img{position:absolute;max-width:34%;max-height:38%;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(0,0,0,.12));transition:transform .25s cubic-bezier(.2,.7,.2,1);}
   .scatter img:hover{transform:scale(1.08);}
@@ -442,33 +445,35 @@ window.renderCard=renderCard;window.shareCard=shareCard;window.showCardResult=sh
 // 평소엔 완전히 정지. 마우스로 쓰다듬을 때만 발이 아주 조금 따라 흔들린다. 글꼴=EBS 훈민정음(옛한글은 NMJyet 폴백).
 // 커튼용 = 언해본 현대 표기 전사본(아래아·첫가끝을 현대 음절로) → EBS가 음절을 깔끔히 조합.
 // (또렷한 옛한글 원문은 서문 화면에서 나눔명조 옛한글로 별도 표시)
-const SEOMUN_LINES=["나랏말싸미 듕귁에 달아","문짜와로 서르 사맛디 아니할쌔","이런 젼차로 어린 백셩이 니르고져 홀 빼이셔도","마참내 제 뜨들 시러 펴디 몯할 노미 하니라","내 이랄 위하야 어엿비 너겨","날로 쑤메 편안킈 하고져 할 따라미니라"];
+const SEOMUN_LINES=["나랏말싸미 듕귁에 달아","서르 사맛디 아니할쌔","이런 젼차로 어린 백셩이","니르고져 홀 빼이셔도","마참내 제 뜨들 시러 펴디","몯할 노미 하니라","내 이랄 위하야 어엿비 너겨","새로 스믈여듧 글자를 맹가노니","날로 쑤메 편안킈 하고져","할 따라미니라"];
 function mountCurtain(cv, slot){
-  const FULL=SEOMUN_LINES.join("  ").replace(/\s/g,""), CH=FULL.split("");
   // 발 속 세 구절만 볼드(붉게)로 강조 → 누르면 그 메뉴로. (누르다 스치면 발이 흔들림)
   const TARGETS=[{txt:"사맛디",go:"rung1"},{txt:"제뜨들",go:"rung2"},{txt:"편안킈",go:"pyeonan"}];
-  const tag=new Array(CH.length).fill(null);
-  for(const t of TARGETS){const p=FULL.indexOf(t.txt);if(p>=0)for(let k=0;k<t.txt.length;k++)tag[p+k]=t.go;}
+  // 각 줄 = 세로 한 칸(열). 공백 제거 → 화면 비율이 바뀌어도 줄 구성(어느 글자가 어느 열)은 고정.
+  const LINES=SEOMUN_LINES.map(s=>s.replace(/\s/g,""));
+  const LINE_CH=LINES.map(l=>l.split(""));
+  const LINE_TAG=LINES.map(l=>{const t=new Array(l.length).fill(null);
+    for(const tg of TARGETS){const p=l.indexOf(tg.txt);if(p>=0)for(let k=0;k<tg.txt.length;k++)t[p+k]=tg.go;}return t;});
+  const N=LINES.length, MAXLEN=Math.max(1,...LINES.map(l=>l.length));
   const x=cv.getContext('2d');
-  let FS=20,SP=FS*1.3,RADIUS=60;
-  const GRAV=0.10,FRIC=0.93,ITER=4,PUSH=2.6;
+  let FS=20,SP=FS*1.28,RADIUS=60;
+  const GRAV=0.10,FRIC=0.92,ITER=4,PUSH=1.7;   // 데스크톱 과한 흔들림 완화
   let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null;
   function layout(){
     DPR=Math.min(2,window.devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;if(!W||!H)return false;
     cv.width=W*DPR;cv.height=H*DPR;x.setTransform(DPR,0,0,DPR,0,0);
-    FS=Math.round(Math.max(15,Math.min(26,W/18.5)));SP=FS*1.3;RADIUS=FS*3;   // 발 ~87%로 축소
     const cr=cv.getBoundingClientRect(), ir=slot.getBoundingClientRect();
-    const topY=Math.max(0,ir.bottom-cr.top-2);
-    let bandW=W*0.80, bandX=(W-bandW)/2;                  // 폭 80%, 가운데
-    const maxLen=Math.max(4,Math.floor((H-topY-4)/SP));
-    let N=Math.max(1,Math.ceil(CH.length/maxLen));
-    if(bandW/N<FS*1.05){FS=Math.max(12,Math.floor(bandW/N/1.05));SP=FS*1.3;RADIUS=FS*3;}
-    cols=[];let idx=0;
-    for(let ci=0;ci<N && idx<CH.length;ci++){
-      const colX=bandX+bandW-(ci+0.5)*(bandW/N);          // 우→좌 (언해본 원본 세로쓰기)
-      const len=Math.min(maxLen, CH.length-idx);
-      const pts=[];for(let i=0;i<len;i++){pts.push({x:colX,y:topY+i*SP,px:colX,py:topY+i*SP,ch:CH[idx],g:tag[idx]});idx++;}
-      if(len>0)cols.push({x0:colX,y0:topY,pts});
+    const topY=Math.max(0,ir.bottom-cr.top-2), availH=Math.max(40,H-topY-4);
+    const bandW=W*0.9, bandX=(W-bandW)/2, colW=bandW/N;   // N열 고정, 가운데
+    // 폭·높이 둘 다 맞춰 글자 크기만 산출 — 줄 구성은 절대 안 바뀜
+    FS=Math.max(11,Math.min(26,Math.floor(Math.min(colW/1.12,(availH/MAXLEN)/1.28))));
+    SP=FS*1.28;RADIUS=FS*2.5;
+    cols=[];
+    for(let ci=0;ci<N;ci++){
+      const colX=bandX+bandW-(ci+0.5)*colW;               // 우→좌 (세로쓰기)
+      const ch=LINE_CH[ci],tg=LINE_TAG[ci],pts=[];
+      for(let i=0;i<ch.length;i++)pts.push({x:colX,y:topY+i*SP,px:colX,py:topY+i*SP,ch:ch[i],g:tg[i]});
+      if(pts.length)cols.push({x0:colX,y0:topY,pts});
     }
     return true;
   }
@@ -506,7 +511,12 @@ function mountCurtain(cv, slot){
     if(e>=1&&partGo){const g=partGo;partGo=null;window.__enter=true;if(window.go)window.go(g);}  // 다음 화면 커지며 등장
   }
   function hit(mx,my){let best=null,bd=1e9;for(const col of cols)for(const p of col.pts){if(!p.g)continue;const d=Math.hypot(p.x-mx,p.y-my);if(d<bd){bd=d;best=p;}}return (best&&bd<FS*1.7)?best.g:null;}
-  function loop(){if(!document.body.contains(cv))return;T+=0.016;if(parting)drawPart();else{step();draw();}requestAnimationFrame(loop);}
+  let _prev=0,_acc=0;
+  function loop(ts){if(!document.body.contains(cv))return;requestAnimationFrame(loop);
+    ts=ts||performance.now();if(!_prev)_prev=ts;let dt=ts-_prev;_prev=ts;if(dt>50)dt=50;
+    if(parting){drawPart();return;}
+    _acc+=dt;let did=false;while(_acc>=16.67){T+=0.016;step();_acc-=16.67;did=true;}  // 물리 60fps 고정(고주사율서도 동일 속도)
+    if(did)draw();}
   cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;mouse.x=mx;mouse.y=my;active=true;cv.style.cursor=hit(mx,my)?'pointer':'default';});
   cv.addEventListener('pointerleave',()=>{active=false;mouse.x=mouse.y=-1e4;});
   cv.addEventListener('click',e=>{if(parting)return;const r=cv.getBoundingClientRect();const g=hit(e.clientX-r.left,e.clientY-r.top);if(g){parting=true;partT0=performance.now();partGo=g;}});
@@ -625,13 +635,14 @@ const STEPS={
         <button class="btn primary" id="playBtn" aria-label="소리 듣기" style="font-size:26px;min-width:72px;border-radius:999px">🔊</button>
         <button class="btn ghost" id="next">›</button></div>
     </div>
-    <div class="subcard" style="margin-top:12px;text-align:left">
-      <div style="font-weight:800;margin-bottom:8px">이렇게 해보세요</div>
-      <div class="muted" style="line-height:1.95">
-        <b>1 · 소리 듣기</b> — 🔊를 눌러 들어요. 원래 글자가 없던 소리예요.<br>
-        <b>2 · 만년필로 그리기</b> — 정답은 없어요. ‘솨아’, ‘토도독’처럼 내 귀에 들린 대로.<br>
-        <b>3 · 사진 올리기</b> — 아래에 다른 사람들의 ‘소리 글씨’와 별처럼 모여요.
-      </div>
+    <div class="subcard" style="margin-top:12px;text-align:center">
+      <div style="font-weight:800;margin-bottom:6px">이렇게 해보세요</div>
+      <div class="how-step"><div class="how-t">1 · 소리 듣기</div>
+        <div class="how-d">🔊를 눌러 소리를 들어보세요. 원래 글자가 없던 소리예요.</div></div>
+      <div class="how-step"><div class="how-t">2 · 만년필로 쓰기</div>
+        <div class="how-d">정답은 없어요. ‘솨아’, ‘토도독’처럼 내 귀에 들린 대로 적어보세요.</div></div>
+      <div class="how-step"><div class="how-t">3 · 사진 올리기</div>
+        <div class="how-d">다른 사람들의 소리 글씨도 함께 구경해보세요.</div></div>
     </div>
     <button class="btn primary block" id="up" style="margin-top:12px">✍️ 소리를 만년필로 써서 올리기</button>
     <div id="sstatus"></div>
@@ -641,13 +652,20 @@ const STEPS={
   rung2:()=>({crumb:'제뜨들',html:`
     <div class="sec-title">제뜨들</div>
     <div class="sec-sub">제 뜻을 펼친 문구</div>
-    <div class="sec-desc">유명한 한글로 쓰인 문구를 직접 써서 업로드해보세요.</div>
-    <div class="subcard" style="text-align:center;margin-top:16px">
-      <div class="muted">이번 문구</div>
-      <div class="display" id="phrase" style="font-size:clamp(28px,7.5vw,40px);margin-top:6px">대한독립만세</div>
+    <div class="sec-desc">한글로 쓰인 문구를 골라, 만년필로 직접 써서 올려보세요.</div>
+    <div class="subcard" style="margin-top:16px">
+      <div class="row" style="align-items:center;gap:8px">
+        <button class="btn ghost" id="pprev" aria-label="이전 문구">‹</button>
+        <div style="flex:1;text-align:center;min-width:0">
+          <div class="muted" id="pwho">이순신</div>
+          <div class="display" id="phrase" style="font-size:clamp(17px,4.6vw,23px);margin-top:6px;line-height:1.4;word-break:keep-all">…</div>
+        </div>
+        <button class="btn ghost" id="pnext" aria-label="다음 문구">›</button>
+      </div>
     </div>
-    <button class="btn primary block" id="up" style="margin-top:12px">✍️ 만년필로 써서 올리기</button>
+    <button class="btn primary block" id="up" style="margin-top:12px">✍️ 이 문구를 만년필로 써서 올리기</button>
     <div id="lstatus"></div>
+    <div class="muted" style="margin-top:10px;font-size:12.5px;line-height:1.5">원하는 문구가 없나요? <b>운영자에게 요청</b>하면 더 추가돼요.</div>
     <div class="muted" id="wallCount" style="margin-top:16px"></div>
     <div class="gallery" id="wallGrid" style="margin-top:8px"></div>`}),
 
@@ -731,16 +749,26 @@ const WIRE={
       catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
     loadScatter();
   },
-  rung2:(el)=>{   // 제뜨들: 대한독립만세 써서 → 벽 + 공유카드
+  rung2:(el)=>{   // 제뜨들: 문구 선택(‹ ›) → 만년필로 써서 → 벽 + 공유카드
+    const PHRASES=[
+      {who:'이순신',text:'죽고자 하면 살 것이고, 살고자 하면 죽을 것이다.'},
+      {who:'신채호',text:'역사를 잊은 민족에게 미래는 없다.'},
+      {who:'김구',text:'오직 한없이 가지고 싶은 것은 높은 문화의 힘이다.'},
+    ];
+    let pi=0;
+    const who=el.querySelector('#pwho'),ph=el.querySelector('#phrase');
     const st=el.querySelector('#lstatus'),grid=el.querySelector('#wallGrid'),cnt=el.querySelector('#wallCount');
-    const PHRASE=(el.querySelector('#phrase').textContent||'대한독립만세').trim();
+    function showP(){who.textContent=PHRASES[pi].who;ph.textContent='“'+PHRASES[pi].text+'”';}
+    el.querySelector('#pprev').onclick=()=>{pi=(pi-1+PHRASES.length)%PHRASES.length;showP();};
+    el.querySelector('#pnext').onclick=()=>{pi=(pi+1)%PHRASES.length;showP();};
+    showP();
     async function loadWall(){try{const d=await api('/api/posts/letter');const posts=d.posts||[];
       cnt.textContent=posts.length?`${posts.length.toLocaleString()}명이 함께 썼어요`:'';
       grid.innerHTML=posts.map(p=>`<div class="gcard"><img src="${p.image}" loading="lazy"></div>`).join('')||'<div class="muted">첫 글씨를 남겨보세요.</div>';}catch(e){}}
-    el.querySelector('#up').onclick=()=>pickPhoto(async data=>{st.innerHTML=PEN;
-      try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'letter',image:data,text:PHRASE})});
+    el.querySelector('#up').onclick=()=>pickPhoto(async data=>{st.innerHTML=PEN;const cur=PHRASES[pi];
+      try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'letter',image:data,text:cur.text})});
         st.innerHTML='<div class="note ok">올렸어요 · 벽에 더해졌어요</div>';loadWall();
-        showCardResult(await renderCard({photo:data,pillar:'제 ᄠᅳ들',caption:PHRASE}),'공유 카드');}
+        showCardResult(await renderCard({photo:data,pillar:'제 ᄠᅳ들',caption:'— '+cur.who}),'공유 카드');}
       catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
     loadWall();
   },
