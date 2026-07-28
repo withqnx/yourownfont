@@ -3,7 +3,7 @@
 # injects $PORT, which the Dockerfile's uvicorn command already respects.
 services:
   - type: web
-    name: yourownfont
+    name: 2026spell
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
