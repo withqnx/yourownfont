@@ -169,6 +169,21 @@
   .how-step{margin-top:14px;}
   .how-t{font-weight:800;font-size:16px;color:var(--ink);}
   .how-d{font-weight:400;font-size:13px;color:var(--mid);line-height:1.6;margin-top:4px;word-break:keep-all;}
+  /* 편안킈: 만년필 후기 쇼케이스 */
+  .pen{margin-top:22px;}
+  .pen-photo{width:100%;aspect-ratio:16/10;border:1px dashed var(--hairline);border-radius:var(--r-nested);overflow:hidden;
+    display:flex;align-items:center;justify-content:center;color:var(--mid);font-size:13px;background:var(--surface);}
+  .pen-photo img{width:100%;height:100%;object-fit:cover;}
+  .pen-name{font-weight:900;font-size:22px;letter-spacing:-.02em;margin-top:12px;color:var(--ink);}
+  .pen-name .muted{font-weight:500;font-size:15px;}
+  .pen-tag{font-size:13px;margin-top:2px;}
+  .reviews{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+  .review{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-nested);padding:14px 16px;}
+  .review p{font-size:14px;line-height:1.6;color:var(--ink);word-break:keep-all;}
+  .review span{display:block;margin-top:6px;font-size:12px;}
+  .pen-next{margin-top:26px;border:1px solid var(--hairline);border-radius:var(--r-nested);padding:24px 18px;text-align:center;background:var(--surface);}
+  .pen-next .soon{letter-spacing:.12em;font-size:11px;color:var(--ember);font-weight:700;}
+  .pen-next .pen-name{font-size:26px;}
   .scatter{position:relative;width:100%;height:44dvh;margin-top:12px;overflow:hidden;}
   .scatter img{position:absolute;max-width:34%;max-height:38%;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(0,0,0,.12));transition:transform .25s cubic-bezier(.2,.7,.2,1);}
   .scatter img:hover{transform:scale(1.08);}
@@ -670,15 +685,18 @@ const STEPS={
     <div class="gallery" id="wallGrid" style="margin-top:8px"></div>`}),
 
   // ---------- 편안킈 : 나만의 폰트 만들기 (체험하기 → 곧 열려요) ----------
+  // 편안킈: '편히 쓰는' 만년필 쇼케이스 — 베개·세종 후기 전시 + 다음 만년필(장군, 가제) 홍보.
+  // 실제 후기/사진은 회원님이 제공 예정 → 지금은 자리(placeholder). WIRE의 PENS 배열만 채우면 됨.
   pyeonan:()=>({crumb:'편안킈',html:`
     <div class="sec-title">편안킈</div>
-    <div class="sec-sub">나만의 폰트 만들기</div>
-    <div class="sec-desc">내 글씨체를 키보드로도 편하게 사용해보세요.</div>
-    <div class="subcard" style="text-align:center;margin-top:16px;padding:26px 18px">
-      <div style="font-size:40px">🖋️</div>
-      <p class="muted" style="margin-top:8px;line-height:1.7">손글씨 한 벌을 다 쓰면<br>내 글씨가 진짜 폰트가 됩니다.</p>
-    </div>
-    <button class="btn primary block" id="try" style="margin-top:12px" onclick="go('font_soon')">체험하기 →</button>`}),
+    <div class="sec-sub">손에 편안한 만년필</div>
+    <div class="sec-desc">편히 쓰는 즐거움 — 먼저 써 본 분들의 이야기예요.</div>
+    <div id="pens"></div>
+    <div class="pen-next">
+      <div class="soon">COMING SOON</div>
+      <div class="pen-name" style="margin-top:6px">장군 <span class="muted">· 가제</span></div>
+      <p class="muted" id="nextDesc" style="margin-top:8px;line-height:1.7">다음 만년필을 준비하고 있어요.<br>(소개 문구가 들어갈 자리)</p>
+    </div>`}),
 
   admin:()=>({crumb:'관리자',html:`
     <div class="label">관리자 · 검토 대기</div>
@@ -771,6 +789,24 @@ const WIRE={
         showCardResult(await renderCard({photo:data,pillar:'제 ᄠᅳ들',caption:'— '+cur.who}),'공유 카드');}
       catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
     loadWall();
+  },
+  pyeonan:(el)=>{   // 편안킈: 만년필 후기 쇼케이스 (콘텐츠는 회원님 제공 예정 → 자리만)
+    const PENS=[
+      {name:'베개', tag:'(한 줄 소개 자리)', photo:'', reviews:[
+        {who:'이름', text:'후기가 들어갈 자리입니다.'},
+        {who:'이름', text:'후기가 들어갈 자리입니다.'}]},
+      {name:'세종', tag:'(한 줄 소개 자리)', photo:'', reviews:[
+        {who:'이름', text:'후기가 들어갈 자리입니다.'},
+        {who:'이름', text:'후기가 들어갈 자리입니다.'}]},
+    ];
+    const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    el.querySelector('#pens').innerHTML=PENS.map(p=>`
+      <div class="pen">
+        <div class="pen-photo">${p.photo?`<img src="${esc(p.photo)}" alt="${esc(p.name)} 만년필">`:esc(p.name)+' 만년필 사진 자리'}</div>
+        <div class="pen-name">${esc(p.name)} <span class="muted">만년필</span></div>
+        <div class="pen-tag muted">${esc(p.tag)}</div>
+        <div class="reviews">${p.reviews.map(r=>`<div class="review"><p>“${esc(r.text)}”</p><span class="muted">— ${esc(r.who)}</span></div>`).join('')}</div>
+      </div>`).join('');
   },
   admin:(el)=>{
     const q=el.querySelector('#queue'),st=el.querySelector('#qstatus');
