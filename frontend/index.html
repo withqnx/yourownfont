@@ -169,22 +169,27 @@
   .how-step{margin-top:14px;}
   .how-t{font-weight:800;font-size:16px;color:var(--ink);}
   .how-d{font-weight:400;font-size:13px;color:var(--mid);line-height:1.6;margin-top:4px;word-break:keep-all;}
-  /* 편안킈: 만년필 소개 문구 + 가로 3메뉴 */
-  .pen-copy{text-align:center;margin-top:12px;}
-  .pen-copy .l1{font-family:"EBSHunmin","Paperlogy",serif;font-size:clamp(20px,5.4vw,27px);line-height:1.55;color:var(--ink);word-break:keep-all;}
+  /* 편안킈: 만년필 소개 문구(한 폰트로 통일) + 가로 3메뉴 */
+  .pen-copy{text-align:center;margin-top:16px;}
+  .pen-copy .l1{font-family:var(--font);font-weight:700;font-size:clamp(19px,5vw,25px);line-height:1.75;letter-spacing:-.01em;color:var(--ink);word-break:keep-all;}
   .pen-copy .l1 b{font-weight:900;}
-  .pen-copy .l2{margin-top:18px;font-size:clamp(15px,4vw,18px);line-height:1.65;color:var(--mid);word-break:keep-all;}
+  .pen-copy .l2{margin-top:22px;font-family:var(--font);font-weight:500;font-size:clamp(15px,4vw,18px);line-height:1.75;letter-spacing:-.01em;color:var(--mid);word-break:keep-all;}
   .pen-copy .l2 b{color:var(--ink);font-weight:800;}
-  .pen-menu{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:28px;}
-  .pen-card{display:flex;flex-direction:column;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--hairline);
-    border-radius:var(--r-nested);padding:16px 8px;cursor:pointer;font-family:var(--font);transition:border-color .15s,transform .1s,background .15s;}
-  .pen-card:hover{border-color:var(--ink);transform:translateY(-2px);background:var(--surface);}
-  .pen-card.soon-card{cursor:default;opacity:.5;}
-  .pen-card.soon-card:hover{transform:none;border-color:var(--hairline);background:var(--paper);}
-  .pen-card .th{width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-  .pen-card .th img{width:100%;height:100%;object-fit:contain;}
-  .pen-card .nm{font-weight:800;font-size:15px;color:var(--ink);text-align:center;}
-  .pen-card .nm span{font-weight:500;font-size:11px;color:var(--mid);display:block;margin-top:2px;}
+  .pen-menu{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:32px;align-items:end;}
+  .pen-card{display:flex;flex-direction:column;align-items:center;gap:12px;background:none;border:0;padding:6px 2px;cursor:pointer;font-family:var(--font);transition:transform .12s;}
+  .pen-card:hover{transform:translateY(-3px);}
+  .pen-card .th{width:100%;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .pen-card .th img{max-width:100%;max-height:100%;object-fit:contain;}
+  .pen-card .pen-logo{height:18px;width:auto;max-width:90%;object-fit:contain;}
+  .pen-card.soon-card{cursor:default;}
+  .pen-card.soon-card:hover{transform:none;}
+  .soon-box{width:100%;aspect-ratio:3/4;border:1.5px dashed var(--hairline);border-radius:var(--r-nested);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+  .soon-box b{font-size:clamp(20px,6.5vw,28px);font-weight:900;color:var(--ink-soft);letter-spacing:-.02em;line-height:1;}
+  .soon-box span{font-size:12px;color:var(--mid);}
+  .soon-cap{height:18px;display:flex;align-items:center;font-size:13px;font-weight:700;color:var(--mid);}
+  .rev-logo{display:flex;justify-content:center;align-items:center;margin-top:12px;min-height:38px;}
+  .rev-logo img{height:34px;width:auto;max-width:72%;object-fit:contain;}
   /* 인스타형 후기 타임라인 */
   .feed{margin-top:14px;}
   .ig{background:var(--paper);border:1px solid var(--hairline);border-radius:var(--r-nested);overflow:hidden;margin-top:16px;}
@@ -709,23 +714,24 @@ const STEPS={
     <div class="pen-menu">
       <button class="pen-card" onclick="go('reviews',{pen:'베개'})">
         <div class="th"><img src="/assets/pen-bege.png" alt="베개 만년필" onerror="this.style.display='none'"></div>
-        <div class="nm">베개</div>
+        <img class="pen-logo" src="/assets/logo-bege.png" alt="베개">
       </button>
       <button class="pen-card" onclick="go('reviews',{pen:'세종'})">
         <div class="th"><img src="/assets/pen-sejong.png" alt="세종 만년필" onerror="this.style.display='none'"></div>
-        <div class="nm">세종</div>
+        <img class="pen-logo" src="/assets/logo-sejong.png" alt="세종">
       </button>
-      <button class="pen-card soon-card" disabled>
-        <div class="th"></div>
-        <div class="nm">장군<span>예정</span></div>
-      </button>
+      <div class="pen-card soon-card">
+        <div class="soon-box"><b>2026</b><span>예정</span></div>
+        <div class="soon-cap">장군</div>
+      </div>
     </div>`}),
 
-  // 후기 타임라인(인스타형): 사진 스와이프 캐러셀 + 아래 글. ctx.pen = '베개'|'세종'
-  reviews:(ctx)=>({crumb:((ctx&&ctx.pen)||'')+' 만년필',html:`
-    <div class="sec-title" style="font-size:clamp(30px,9vw,50px)">${esc((ctx&&ctx.pen)||'')}</div>
-    <div class="sec-desc">먼저 써 본 분들의 이야기</div>
-    <div class="feed" id="feed"><div class="muted" style="text-align:center;margin-top:24px">불러오는 중…</div></div>`}),
+  // 후기 타임라인(인스타형): 상단 로고 + 사진 스와이프 캐러셀 + 아래 글. ctx.pen = '베개'|'세종'
+  reviews:(ctx)=>{const pen=(ctx&&ctx.pen)||'';const logo={'베개':'/assets/logo-bege.png','세종':'/assets/logo-sejong.png'}[pen]||'';
+    return {crumb:pen+' 만년필',html:`
+    <div class="rev-logo">${logo?`<img src="${esc(logo)}" alt="${esc(pen)}" onerror="this.outerHTML='<div class=\\'sec-title\\'>${esc(pen)}</div>'">`:`<div class="sec-title">${esc(pen)}</div>`}</div>
+    <div class="sec-desc" style="margin-top:8px">먼저 써 본 분들의 이야기</div>
+    <div class="feed" id="feed"><div class="muted" style="text-align:center;margin-top:24px">불러오는 중…</div></div>`};},
 
   admin:()=>({crumb:'관리자',html:`
     <div class="label">관리자 · 검토 대기</div>
