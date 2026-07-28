@@ -57,11 +57,32 @@ challenge = Table(
     Column("created_at", DateTime),
 )
 
+# 제뜨들 — 운영자에게 보내는 '문구 요청' (텍스트만).
+requests = Table(
+    "requests", meta,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("text", Text),
+    Column("created_at", DateTime),
+)
+
 meta.create_all(engine)
 
 
 def _now():
     return _dt.datetime.now(_dt.timezone.utc)
+
+
+# ---------------- 제뜨들 문구 요청 (운영자 확인) ----------------
+def add_request(text: str) -> int:
+    with engine.begin() as c:
+        r = c.execute(insert(requests).values(text=text, created_at=_now()))
+        return int(r.inserted_primary_key[0])
+
+
+def list_requests(limit: int = 500) -> list[dict]:
+    with engine.begin() as c:
+        rows = c.execute(select(requests).order_by(requests.c.id.desc()).limit(limit)).mappings().all()
+    return [dict(r) for r in rows]
 
 
 # ---------------- posts (대나무숲 / 그대에게) ----------------

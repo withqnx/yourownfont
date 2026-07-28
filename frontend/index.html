@@ -204,6 +204,10 @@
   .ig-body{padding:12px 16px 16px;}
   .ig-date{font-size:12px;color:var(--mid);}
   .ig-text{font-size:14px;line-height:1.7;color:var(--ink);margin-top:6px;word-break:keep-all;}
+  /* 제뜨들: 누끼 손글씨 콜라주 */
+  .collage{position:relative;width:100%;height:58dvh;overflow:hidden;margin-top:8px;}
+  .collage img{position:absolute;max-width:46%;filter:drop-shadow(0 3px 8px rgba(0,0,0,.18));cursor:pointer;transition:transform .25s cubic-bezier(.2,.7,.2,1);}
+  .collage .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mid);font-size:13px;}
   .scatter{position:relative;width:100%;height:44dvh;margin-top:12px;overflow:hidden;}
   .scatter img{position:absolute;max-width:34%;max-height:38%;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(0,0,0,.12));transition:transform .25s cubic-bezier(.2,.7,.2,1);}
   .scatter img:hover{transform:scale(1.08);}
@@ -700,9 +704,16 @@ const STEPS={
     </div>
     <button class="btn primary block" id="up" style="margin-top:12px">✍️ 이 문구를 만년필로 써서 올리기</button>
     <div id="lstatus"></div>
-    <div class="muted" style="margin-top:10px;font-size:12.5px;line-height:1.5">원하는 문구가 없나요? <b>운영자에게 요청</b>하면 더 추가돼요.</div>
-    <div class="muted" id="wallCount" style="margin-top:16px"></div>
-    <div class="gallery" id="wallGrid" style="margin-top:8px"></div>`}),
+    <div class="reqbox" style="margin-top:14px">
+      <div class="muted" style="font-size:12.5px;margin-bottom:6px">원하는 문구가 없나요? <b>운영자에게 요청</b>하면 더 추가돼요.</div>
+      <div class="row" style="gap:8px">
+        <input class="input" id="reqText" placeholder="넣고 싶은 문구·작가" maxlength="120" style="flex:1">
+        <button class="btn ghost" id="reqSend">보내기</button>
+      </div>
+      <div id="reqStatus" class="muted" style="font-size:12px;margin-top:6px"></div>
+    </div>
+    <div class="muted" id="wallCount" style="margin-top:18px"></div>
+    <div class="collage" id="wall" style="margin-top:8px"></div>`}),
 
   // ---------- 편안킈 : 나만의 폰트 만들기 (체험하기 → 곧 열려요) ----------
   // 편안킈: 만년필 소개 문구 + 가로 3메뉴(베개·세종 → 후기 타임라인, 장군 예정)
@@ -734,9 +745,12 @@ const STEPS={
     <div class="feed" id="feed"><div class="muted" style="text-align:center;margin-top:24px">불러오는 중…</div></div>`};},
 
   admin:()=>({crumb:'관리자',html:`
-    <div class="label">관리자 · 검토 대기</div>
-    <div class="field"><label>관리자 토큰</label><input class="input" id="token" type="password" placeholder="ADMIN_TOKEN" /></div>
+    <div class="label">관리자</div>
+    <div class="field"><label>관리자 비밀번호</label><input class="input" id="token" type="password" placeholder="비밀번호" /></div>
     <div class="row"><button class="btn primary" id="loadQ">불러오기</button><span class="muted" id="qstatus"></span></div>
+    <div class="label" style="margin-top:22px">제뜨들 · 문구 요청</div>
+    <div class="postlist" id="reqlist"></div>
+    <div class="label" style="margin-top:22px">검토 대기</div>
     <div class="postlist" id="queue"></div>`}),
 };
 
@@ -810,14 +824,33 @@ const WIRE={
     ];
     let pi=0;
     const who=el.querySelector('#pwho'),ph=el.querySelector('#phrase');
-    const st=el.querySelector('#lstatus'),grid=el.querySelector('#wallGrid'),cnt=el.querySelector('#wallCount');
+    const st=el.querySelector('#lstatus'),wall=el.querySelector('#wall'),cnt=el.querySelector('#wallCount');
     function showP(){who.textContent=PHRASES[pi].who;ph.textContent='“'+PHRASES[pi].text+'”';}
     el.querySelector('#pprev').onclick=()=>{pi=(pi-1+PHRASES.length)%PHRASES.length;showP();};
     el.querySelector('#pnext').onclick=()=>{pi=(pi+1)%PHRASES.length;showP();};
     showP();
+    // 문구 요청 → 운영자(관리자 페이지 #admin 에서 확인)
+    const rt=el.querySelector('#reqText'),rs=el.querySelector('#reqStatus');
+    el.querySelector('#reqSend').onclick=async()=>{const t=(rt.value||'').trim();if(!t){rt.focus();return;}
+      rs.textContent='보내는 중…';
+      try{await api('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
+        rt.value='';rs.textContent='전달됐어요 · 운영자가 확인할게요 🙏';}
+      catch(e){rs.textContent='⚠ '+e.message;}};
+    // 누끼 손글씨 콜라주 (잉크만 따서 겹쳐 흐르게)
     async function loadWall(){try{const d=await api('/api/posts/letter');const posts=d.posts||[];
       cnt.textContent=posts.length?`${posts.length.toLocaleString()}명이 함께 썼어요`:'';
-      grid.innerHTML=posts.map(p=>`<div class="gcard"><img src="${p.image}" loading="lazy"></div>`).join('')||'<div class="muted">첫 글씨를 남겨보세요.</div>';}catch(e){}}
+      if(!posts.length){wall.innerHTML='<div class="empty">첫 글씨를 남겨보세요.</div>';return;}
+      const cuts=await Promise.all(posts.slice(0,24).map(p=>cutout(p.image)));
+      wall.innerHTML='';
+      cuts.forEach((src,k)=>{const im=document.createElement('img');im.src=src;im.loading='lazy';
+        im.style.left=(1+(k%3)/2.6*66+((k*13)%15-7))+'%';
+        im.style.top=(1+Math.floor(k/3)*19+((k*7)%9-4))+'%';
+        im.style.width=(30+((k*17)%17))+'%';
+        im.style.transform='rotate('+(((k*29)%16)-8)+'deg)';
+        im.style.zIndex=k;
+        im.onclick=()=>{im.style.zIndex=99;im.style.transform='scale(1.55)';};
+        wall.appendChild(im);});
+    }catch(e){wall.innerHTML='<div class="empty">불러오지 못했어요</div>';}}
     el.querySelector('#up').onclick=()=>pickPhoto(async data=>{st.innerHTML=PEN;const cur=PHRASES[pi];
       try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'letter',image:data,text:cur.text})});
         st.innerHTML='<div class="note ok">올렸어요 · 벽에 더해졌어요</div>';loadWall();
@@ -850,10 +883,13 @@ const WIRE={
     }).catch(fail);
   },
   admin:(el)=>{
-    const q=el.querySelector('#queue'),st=el.querySelector('#qstatus');
+    const q=el.querySelector('#queue'),st=el.querySelector('#qstatus'),rl=el.querySelector('#reqlist');
     let token='';
     async function load(){token=el.querySelector('#token').value;st.textContent='불러오는 중…';
-      try{const d=await api(`/api/admin/queue?token=${encodeURIComponent(token)}`);st.textContent='';
+      try{
+        const rq=await api(`/api/admin/requests?token=${encodeURIComponent(token)}`);
+        rl.innerHTML=(rq.requests||[]).map(r=>`<div class="post"><p>${esc(r.text)}</p><div class="muted" style="font-size:11px;margin-top:6px">${esc((r.created_at||'').slice(0,16).replace('T',' '))}</div></div>`).join('')||'<div class="muted">요청이 없습니다.</div>';
+        const d=await api(`/api/admin/queue?token=${encodeURIComponent(token)}`);st.textContent='';
         q.innerHTML=d.queue.map(p=>`<div class="gcard"><img src="${p.image}" loading="lazy"><div class="bar"><span class="muted">신고 ${p.reports} · ${p.kind}</span></div>
           <div class="row" style="padding:0 10px 10px"><button class="btn ghost" onclick="mod(${p.id},true,this)">허용</button><button class="btn ghost" style="color:var(--ember)" onclick="mod(${p.id},false,this)">삭제</button></div></div>`).join('')||'<div class="muted">검토할 글이 없습니다.</div>';}
       catch(e){st.textContent='';alert(e.message);}}

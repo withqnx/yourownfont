@@ -257,3 +257,26 @@ def sagak_submit(s: SagakIn) -> dict:
 @app.get("/api/sagak/{sound}")
 def sagak_list(sound: str) -> dict:
     return {"entries": store.list_sagak(sound.strip()[:32])}
+
+
+# ---------------- 제뜨들 · 문구 요청 (운영자 확인) ----------------
+class RequestIn(BaseModel):
+    text: str
+
+
+@app.post("/api/request")
+def create_request(r: RequestIn) -> dict:
+    t = (r.text or "").strip()
+    if not t:
+        raise HTTPException(400, "내용을 입력해 주세요.")
+    if len(t) > 500:
+        raise HTTPException(413, "너무 깁니다.")
+    if _blocked(t):
+        raise HTTPException(400, "부적절한 표현이 포함되어 있어요.")
+    return {"id": store.add_request(t)}
+
+
+@app.get("/api/admin/requests")
+def admin_requests(token: str = "") -> dict:
+    _check_admin(token)
+    return {"requests": store.list_requests()}
