@@ -169,21 +169,36 @@
   .how-step{margin-top:14px;}
   .how-t{font-weight:800;font-size:16px;color:var(--ink);}
   .how-d{font-weight:400;font-size:13px;color:var(--mid);line-height:1.6;margin-top:4px;word-break:keep-all;}
-  /* 편안킈: 만년필 후기 쇼케이스 */
-  .pen{margin-top:22px;}
-  .pen-photo{width:100%;aspect-ratio:16/10;border:1px dashed var(--hairline);border-radius:var(--r-nested);overflow:hidden;
-    display:flex;align-items:center;justify-content:center;color:var(--mid);font-size:13px;background:var(--surface);}
-  .pen-photo img{width:100%;height:100%;object-fit:cover;}
-  .pen-name{font-weight:900;font-size:22px;letter-spacing:-.02em;margin-top:12px;color:var(--ink);}
-  .pen-name .muted{font-weight:500;font-size:15px;}
-  .pen-tag{font-size:13px;margin-top:2px;}
-  .reviews{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
-  .review{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-nested);padding:14px 16px;}
-  .review p{font-size:14px;line-height:1.6;color:var(--ink);word-break:keep-all;}
-  .review span{display:block;margin-top:6px;font-size:12px;}
-  .pen-next{margin-top:26px;border:1px solid var(--hairline);border-radius:var(--r-nested);padding:24px 18px;text-align:center;background:var(--surface);}
-  .pen-next .soon{letter-spacing:.12em;font-size:11px;color:var(--ember);font-weight:700;}
-  .pen-next .pen-name{font-size:26px;}
+  /* 편안킈: 만년필 소개 문구 + 가로 3메뉴 */
+  .pen-copy{text-align:center;margin-top:12px;}
+  .pen-copy .l1{font-family:"EBSHunmin","Paperlogy",serif;font-size:clamp(20px,5.4vw,27px);line-height:1.55;color:var(--ink);word-break:keep-all;}
+  .pen-copy .l1 b{font-weight:900;}
+  .pen-copy .l2{margin-top:18px;font-size:clamp(15px,4vw,18px);line-height:1.65;color:var(--mid);word-break:keep-all;}
+  .pen-copy .l2 b{color:var(--ink);font-weight:800;}
+  .pen-menu{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:28px;}
+  .pen-card{display:flex;flex-direction:column;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--hairline);
+    border-radius:var(--r-nested);padding:16px 8px;cursor:pointer;font-family:var(--font);transition:border-color .15s,transform .1s,background .15s;}
+  .pen-card:hover{border-color:var(--ink);transform:translateY(-2px);background:var(--surface);}
+  .pen-card.soon-card{cursor:default;opacity:.5;}
+  .pen-card.soon-card:hover{transform:none;border-color:var(--hairline);background:var(--paper);}
+  .pen-card .th{width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .pen-card .th img{width:100%;height:100%;object-fit:contain;}
+  .pen-card .nm{font-weight:800;font-size:15px;color:var(--ink);text-align:center;}
+  .pen-card .nm span{font-weight:500;font-size:11px;color:var(--mid);display:block;margin-top:2px;}
+  /* 인스타형 후기 타임라인 */
+  .feed{margin-top:14px;}
+  .ig{background:var(--paper);border:1px solid var(--hairline);border-radius:var(--r-nested);overflow:hidden;margin-top:16px;}
+  .ig-car{position:relative;}
+  .ig-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;aspect-ratio:1/1;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .ig-track::-webkit-scrollbar{display:none;}
+  .ig-track img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;scroll-snap-align:center;background:var(--surface);}
+  .ig-count{position:absolute;top:8px;right:10px;background:rgba(0,0,0,.62);color:#fff;font-size:11px;font-weight:600;padding:2px 9px;border-radius:11px;}
+  .ig-dots{display:flex;gap:5px;justify-content:center;padding:9px 0 2px;}
+  .ig-dots i{width:6px;height:6px;border-radius:50%;background:var(--hairline);}
+  .ig-dots i.on{background:var(--ink);}
+  .ig-body{padding:12px 16px 16px;}
+  .ig-date{font-size:12px;color:var(--mid);}
+  .ig-text{font-size:14px;line-height:1.7;color:var(--ink);margin-top:6px;word-break:keep-all;}
   .scatter{position:relative;width:100%;height:44dvh;margin-top:12px;overflow:hidden;}
   .scatter img{position:absolute;max-width:34%;max-height:38%;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(0,0,0,.12));transition:transform .25s cubic-bezier(.2,.7,.2,1);}
   .scatter img:hover{transform:scale(1.08);}
@@ -685,18 +700,32 @@ const STEPS={
     <div class="gallery" id="wallGrid" style="margin-top:8px"></div>`}),
 
   // ---------- 편안킈 : 나만의 폰트 만들기 (체험하기 → 곧 열려요) ----------
-  // 편안킈: '편히 쓰는' 만년필 쇼케이스 — 베개·세종 후기 전시 + 다음 만년필(장군, 가제) 홍보.
-  // 실제 후기/사진은 회원님이 제공 예정 → 지금은 자리(placeholder). WIRE의 PENS 배열만 채우면 됨.
+  // 편안킈: 만년필 소개 문구 + 가로 3메뉴(베개·세종 → 후기 타임라인, 장군 예정)
   pyeonan:()=>({crumb:'편안킈',html:`
-    <div class="sec-title">편안킈</div>
-    <div class="sec-sub">손에 편안한 만년필</div>
-    <div class="sec-desc">편히 쓰는 즐거움 — 먼저 써 본 분들의 이야기예요.</div>
-    <div id="pens"></div>
-    <div class="pen-next">
-      <div class="soon">COMING SOON</div>
-      <div class="pen-name" style="margin-top:6px">장군 <span class="muted">· 가제</span></div>
-      <p class="muted" id="nextDesc" style="margin-top:8px;line-height:1.7">다음 만년필을 준비하고 있어요.<br>(소개 문구가 들어갈 자리)</p>
+    <div class="pen-copy">
+      <p class="l1">고유한 문자를 가진<br>우리나라 문화 수준에 맞는<br><b>만년필</b></p>
+      <p class="l2">한글에 최적화된 무게감과 촉<br><b>탄생하다.</b></p>
+    </div>
+    <div class="pen-menu">
+      <button class="pen-card" onclick="go('reviews',{pen:'베개'})">
+        <div class="th"><img src="/assets/pen-bege.png" alt="베개 만년필" onerror="this.style.display='none'"></div>
+        <div class="nm">베개</div>
+      </button>
+      <button class="pen-card" onclick="go('reviews',{pen:'세종'})">
+        <div class="th"><img src="/assets/pen-sejong.png" alt="세종 만년필" onerror="this.style.display='none'"></div>
+        <div class="nm">세종</div>
+      </button>
+      <button class="pen-card soon-card" disabled>
+        <div class="th"></div>
+        <div class="nm">장군<span>예정</span></div>
+      </button>
     </div>`}),
+
+  // 후기 타임라인(인스타형): 사진 스와이프 캐러셀 + 아래 글. ctx.pen = '베개'|'세종'
+  reviews:(ctx)=>({crumb:((ctx&&ctx.pen)||'')+' 만년필',html:`
+    <div class="sec-title" style="font-size:clamp(30px,9vw,50px)">${esc((ctx&&ctx.pen)||'')}</div>
+    <div class="sec-desc">먼저 써 본 분들의 이야기</div>
+    <div class="feed" id="feed"><div class="muted" style="text-align:center;margin-top:24px">불러오는 중…</div></div>`}),
 
   admin:()=>({crumb:'관리자',html:`
     <div class="label">관리자 · 검토 대기</div>
@@ -790,23 +819,29 @@ const WIRE={
       catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
     loadWall();
   },
-  pyeonan:(el)=>{   // 편안킈: 만년필 후기 쇼케이스 (콘텐츠는 회원님 제공 예정 → 자리만)
-    const PENS=[
-      {name:'베개', tag:'(한 줄 소개 자리)', photo:'', reviews:[
-        {who:'이름', text:'후기가 들어갈 자리입니다.'},
-        {who:'이름', text:'후기가 들어갈 자리입니다.'}]},
-      {name:'세종', tag:'(한 줄 소개 자리)', photo:'', reviews:[
-        {who:'이름', text:'후기가 들어갈 자리입니다.'},
-        {who:'이름', text:'후기가 들어갈 자리입니다.'}]},
-    ];
-    const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    el.querySelector('#pens').innerHTML=PENS.map(p=>`
-      <div class="pen">
-        <div class="pen-photo">${p.photo?`<img src="${esc(p.photo)}" alt="${esc(p.name)} 만년필">`:esc(p.name)+' 만년필 사진 자리'}</div>
-        <div class="pen-name">${esc(p.name)} <span class="muted">만년필</span></div>
-        <div class="pen-tag muted">${esc(p.tag)}</div>
-        <div class="reviews">${p.reviews.map(r=>`<div class="review"><p>“${esc(r.text)}”</p><span class="muted">— ${esc(r.who)}</span></div>`).join('')}</div>
-      </div>`).join('');
+  reviews:(el,ctx)=>{   // 인스타형 후기 타임라인 — reviews.json에서 해당 만년필 후기 로드
+    const pen=(ctx&&ctx.pen)||'베개', feed=el.querySelector('#feed');
+    const fail=()=>{feed.innerHTML='<div class="muted" style="text-align:center;margin-top:24px">후기를 불러오지 못했어요.</div>';};
+    fetch('/assets/reviews.json',{cache:'no-store'}).then(r=>r.json()).then(data=>{
+      const rows=data[pen]||[];
+      if(!rows.length){feed.innerHTML='<div class="muted" style="text-align:center;margin-top:24px">후기가 아직 없어요.</div>';return;}
+      feed.innerHTML=rows.map(rv=>{
+        const multi=(rv.images||[]).length>1;
+        const imgs=(rv.images||[]).map(u=>`<img src="${esc(u)}" loading="lazy" referrerpolicy="no-referrer" alt="">`).join('');
+        const cnt=multi?`<div class="ig-count">1/${rv.images.length}</div>`:'';
+        const dots=multi?`<div class="ig-dots">${rv.images.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div>`:'';
+        return `<div class="ig"><div class="ig-car"><div class="ig-track">${imgs}</div>${cnt}</div>${dots}<div class="ig-body"><div class="ig-date">${esc(rv.date||'')}</div><div class="ig-text">${esc(rv.content||'')}</div></div></div>`;
+      }).join('');
+      feed.querySelectorAll('.ig').forEach(post=>{
+        const track=post.querySelector('.ig-track'),count=post.querySelector('.ig-count'),dots=[...post.querySelectorAll('.ig-dots i')];
+        if(!track||track.children.length<2)return;
+        track.addEventListener('scroll',()=>{
+          const i=Math.round(track.scrollLeft/track.clientWidth);
+          if(count)count.textContent=(i+1)+'/'+track.children.length;
+          dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+        },{passive:true});
+      });
+    }).catch(fail);
   },
   admin:(el)=>{
     const q=el.querySelector('#queue'),st=el.querySelector('#qstatus');
