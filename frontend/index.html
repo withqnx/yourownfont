@@ -922,11 +922,11 @@ const WIRE={
         const rq=await api(`/api/admin/requests?token=${encodeURIComponent(token)}`);
         rl.innerHTML=(rq.requests||[]).map(r=>`<div class="post"><p>${esc(r.text)}</p><div class="muted" style="font-size:11px;margin-top:6px">${esc((r.created_at||'').slice(0,16).replace('T',' '))}</div></div>`).join('')||'<div class="muted">요청이 없습니다.</div>';
         const d=await api(`/api/admin/queue?token=${encodeURIComponent(token)}`);st.textContent='';
-        q.innerHTML=d.queue.map(p=>`<div class="gcard"><img src="${p.image}" loading="lazy"><div class="bar"><span class="muted">신고 ${p.reports} · ${p.kind}</span></div>
-          <div class="row" style="padding:0 10px 10px"><button class="btn ghost" onclick="mod(${p.id},true,this)">허용</button><button class="btn ghost" style="color:var(--ember)" onclick="mod(${p.id},false,this)">삭제</button></div></div>`).join('')||'<div class="muted">검토할 글이 없습니다.</div>';}
+        q.innerHTML=(d.queue||[]).map(p=>`<div class="gcard"><img src="${esc(p.image)}" loading="lazy"><div class="bar"><span class="muted">신고 ${p.reports} · ${p.t==='sagak'?'사맛디':'제뜨들'}${p.subject?' · '+esc(String(p.subject)).slice(0,14):''}</span></div>
+          <div class="row" style="padding:0 10px 10px;gap:8px"><button class="btn ghost" onclick="mod('${p.t}',${p.id},true,this)">다시 열기</button><button class="btn ghost" style="color:var(--ember)" onclick="mod('${p.t}',${p.id},false,this)">삭제</button></div></div>`).join('')||'<div class="muted">신고된 항목이 없습니다.</div>';}
       catch(e){st.textContent='';alert(e.message);}}
-    window.mod=async(id,allow,btn)=>{const fd=new FormData();fd.append('allow',allow);fd.append('token',token);
-      try{await api(`/api/admin/posts/${id}/moderate`,{method:'POST',body:fd});btn.closest('.gcard,.post').remove();}catch(e){alert(e.message);}};
+    window.mod=async(t,id,allow,btn)=>{const fd=new FormData();fd.append('allow',allow);fd.append('token',token);
+      try{await api(`/api/admin/moderate/${t}/${id}`,{method:'POST',body:fd});btn.closest('.gcard,.post').remove();}catch(e){alert(e.message);}};
     el.querySelector('#loadQ').onclick=load;
   },
 };

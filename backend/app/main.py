@@ -151,15 +151,15 @@ def create_post(p: PostIn) -> dict:
     if p.text and _blocked(p.text):
         raise HTTPException(400, "부적절한 표현이 포함되어 있어요.")
     _check_image(p.image)
-    pid = store.add_post(p.kind, p.image)
+    pid = store.add_post(p.kind, p.image, subject=(p.text or "").strip()[:120])
     return {"id": pid, "status": "visible"}
 
 
 @app.get("/api/posts/{kind}")
-def get_posts(kind: str) -> dict:
+def get_posts(kind: str, subject: str = "") -> dict:
     if kind not in POST_KINDS:
         raise HTTPException(400, "invalid kind")
-    return {"posts": store.list_posts(kind)}
+    return {"posts": store.list_posts(kind, subject=subject or None)}
 
 
 @app.post("/api/posts/{pid}/report")
@@ -181,10 +181,12 @@ def admin_queue(token: str = "") -> dict:
     return {"queue": store.review_queue()}
 
 
-@app.post("/api/admin/posts/{pid}/moderate")
-def admin_moderate(pid: int, allow: bool = Form(...), token: str = Form("")) -> dict:
+@app.post("/api/admin/moderate/{t}/{iid}")
+def admin_moderate(t: str, iid: int, allow: bool = Form(...), token: str = Form("")) -> dict:
     _check_admin(token)
-    if not store.moderate(pid, allow):
+    if t not in ("post", "sagak"):
+        raise HTTPException(400, "invalid type")
+    if not store.moderate(t, iid, allow):
         raise HTTPException(404, "not found")
     return {"status": "visible" if allow else "removed"}
 
@@ -257,6 +259,13 @@ def sagak_submit(s: SagakIn) -> dict:
 @app.get("/api/sagak/{sound}")
 def sagak_list(sound: str) -> dict:
     return {"entries": store.list_sagak(sound.strip()[:32])}
+
+
+@app.post("/api/sagak/{sid}/report")
+def sagak_report(sid: int) -> dict:
+    if not store.report_sagak(sid):
+        raise HTTPException(404, "not found")
+    return {"status": "hidden"}
 
 
 # ---------------- 제뜨들 · 문구 요청 (운영자 확인) ----------------

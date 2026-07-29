@@ -30,9 +30,11 @@ posts = Table(
     "posts", meta,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("kind", String(16)),
+    Column("subject", Text),           # 어느 단어/문장에 대한 글인지 (갤러리 필터)
     Column("image", Text),             # base64 data URL of the handwriting photo
     Column("status", String(16)),      # visible | hidden | removed
     Column("reports", Integer, default=0),
+    Column("perm", Integer, default=0),# 1=재열기(영구) → 신고에도 안 숨김
     Column("created_at", DateTime),
 )
 
@@ -42,6 +44,9 @@ sagak = Table(
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("sound", String(32)),
     Column("image", Text),
+    Column("status", String(16)),
+    Column("reports", Integer, default=0),
+    Column("perm", Integer, default=0),
     Column("created_at", DateTime),
 )
 
@@ -68,6 +73,26 @@ requests = Table(
 meta.create_all(engine)
 
 
+def _ensure_columns():
+    """기존 테이블에 추가된 컬럼 보강 (create_all은 기존 테이블 컬럼을 못 늘림)."""
+    from sqlalchemy import text as _t
+    pg = engine.url.get_backend_name().startswith("postgres")
+    cols = [("posts", "subject", "TEXT"), ("posts", "perm", "INTEGER DEFAULT 0"),
+            ("sagak", "status", "VARCHAR(16)"), ("sagak", "reports", "INTEGER DEFAULT 0"),
+            ("sagak", "perm", "INTEGER DEFAULT 0")]
+    for tbl, col, typ in cols:
+        sql = (f'ALTER TABLE {tbl} ADD COLUMN IF NOT EXISTS {col} {typ}' if pg
+               else f'ALTER TABLE {tbl} ADD COLUMN {col} {typ}')
+        try:
+            with engine.begin() as c:
+                c.execute(_t(sql))
+        except Exception:
+            pass
+
+
+_ensure_columns()
+
+
 def _now():
     return _dt.datetime.now(_dt.timezone.utc)
 
@@ -86,41 +111,65 @@ def list_requests(limit: int = 500) -> list[dict]:
 
 
 # ---------------- posts (대나무숲 / 그대에게) ----------------
-def add_post(kind: str, image: str) -> int:
+def add_post(kind: str, image: str, subject: str = "") -> int:
     with engine.begin() as c:
-        r = c.execute(insert(posts).values(kind=kind, image=image, status="visible",
-                                           reports=0, created_at=_now()))
+        r = c.execute(insert(posts).values(kind=kind, subject=subject, image=image,
+                                           status="visible", reports=0, perm=0, created_at=_now()))
         return int(r.inserted_primary_key[0])
 
 
-def list_posts(kind: str, limit: int = 100) -> list[dict]:
+def list_posts(kind: str, subject: str | None = None, limit: int = 300) -> list[dict]:
+    w = [posts.c.kind == kind, posts.c.status == "visible"]
+    if subject is not None:
+        w.append(posts.c.subject == subject)
     with engine.begin() as c:
-        rows = c.execute(select(posts).where(posts.c.kind == kind, posts.c.status == "visible")
+        rows = c.execute(select(posts).where(*w)
                          .order_by(posts.c.id.desc()).limit(limit)).mappings().all()
     return [dict(r) for r in rows]
 
 
-def report_post(pid: int) -> bool:
+def _report(tbl, iid: int) -> bool:
     with engine.begin() as c:
-        row = c.execute(select(posts).where(posts.c.id == pid)).mappings().first()
+        row = c.execute(select(tbl).where(tbl.c.id == iid)).mappings().first()
         if not row:
             return False
-        c.execute(update(posts).where(posts.c.id == pid).values(
-            status="hidden", reports=(row["reports"] or 0) + 1))
+        vals = {"reports": (row["reports"] or 0) + 1}
+        if not row["perm"]:            # 영구(재열기)면 신고 받아도 안 숨김
+            vals["status"] = "hidden"
+        c.execute(update(tbl).where(tbl.c.id == iid).values(**vals))
     return True
 
 
-def review_queue(limit: int = 200) -> list[dict]:
-    with engine.begin() as c:
-        rows = c.execute(select(posts).where(posts.c.status == "hidden")
-                         .order_by(posts.c.id.desc()).limit(limit)).mappings().all()
-    return [dict(r) for r in rows]
+def report_post(pid: int) -> bool:
+    return _report(posts, pid)
 
 
-def moderate(pid: int, allow: bool) -> bool:
+def report_sagak(sid: int) -> bool:
+    return _report(sagak, sid)
+
+
+def review_queue(limit: int = 300) -> list[dict]:
+    out = []
     with engine.begin() as c:
-        r = c.execute(update(posts).where(posts.c.id == pid).values(
-            status="visible" if allow else "removed"))
+        for r in c.execute(select(posts).where(posts.c.status == "hidden")
+                           .order_by(posts.c.id.desc()).limit(limit)).mappings():
+            out.append({"t": "post", "id": r["id"], "image": r["image"],
+                        "subject": r["subject"], "reports": r["reports"], "kind": r["kind"]})
+        for r in c.execute(select(sagak).where(sagak.c.status == "hidden")
+                           .order_by(sagak.c.id.desc()).limit(limit)).mappings():
+            out.append({"t": "sagak", "id": r["id"], "image": r["image"],
+                        "subject": r["sound"], "reports": r["reports"]})
+    out.sort(key=lambda x: x["id"], reverse=True)
+    return out
+
+
+def moderate(t: str, iid: int, allow: bool) -> bool:
+    tbl = sagak if t == "sagak" else posts
+    with engine.begin() as c:
+        if allow:                      # 다시 열기 = 영구(perm=1), 이후 신고 무시
+            r = c.execute(update(tbl).where(tbl.c.id == iid).values(status="visible", perm=1))
+        else:
+            r = c.execute(update(tbl).where(tbl.c.id == iid).values(status="removed"))
     return r.rowcount > 0
 
 
@@ -157,13 +206,14 @@ def like_challenge(cid: int) -> int:
 
 def add_sagak(sound: str, image: str) -> int:
     with engine.begin() as c:
-        r = c.execute(insert(sagak).values(sound=sound, image=image, created_at=_now()))
+        r = c.execute(insert(sagak).values(sound=sound, image=image, status="visible",
+                                           reports=0, perm=0, created_at=_now()))
         return int(r.inserted_primary_key[0])
 
 
-def list_sagak(sound: str, limit: int = 40) -> list[dict]:
+def list_sagak(sound: str, limit: int = 60) -> list[dict]:
     with engine.begin() as c:
-        rows = c.execute(select(sagak).where(sagak.c.sound == sound)
+        rows = c.execute(select(sagak).where(sagak.c.sound == sound, sagak.c.status == "visible")
                          .order_by(sagak.c.id.desc()).limit(limit)).mappings().all()
     return [dict(r) for r in rows]
 
