@@ -163,7 +163,7 @@
   .mindwrap{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-card);padding:8px;margin-top:6px;}
   .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
   .field label{font-size:13px;color:var(--mid);}
-  .input,select,textarea{font-family:var(--font);font-size:15px;color:var(--ink);background:var(--canvas);
+  .input,select,textarea{font-family:var(--font);font-size:16px;color:var(--ink);background:var(--canvas);
     border:1px solid transparent;border-radius:var(--r-btn);padding:11px 14px;outline:none;width:100%;}
   textarea{min-height:120px;resize:vertical;line-height:1.6;}
   .input:focus,select:focus,textarea:focus{border-color:var(--hairline);background:var(--paper);}
@@ -297,7 +297,8 @@ function openCropper(file,cb){
     const ov=document.createElement('div'); ov.className='cropper';
     ov.innerHTML=`<div class="crop-head"><button class="btn ghost" id="crRot">↻ 회전</button>
       <div class="row"><button class="btn ghost" id="crCancel">취소</button><button class="btn primary" id="crOk">확인</button></div></div>
-      <div class="crop-stage"><div class="crop-imgwrap" id="crWrap"></div></div>`;
+      <div class="crop-stage"><div class="crop-imgwrap" id="crWrap"></div></div>
+      <div class="crop-foot"><span class="muted">정사각형으로 잘려요 · 비뚤면 ↻ 회전으로 세워주세요</span></div>`;
     document.querySelector('.window').appendChild(ov);
     const wrap=ov.querySelector('#crWrap'); let box;
     const dispScale=()=>work.getBoundingClientRect().width/work.width;
@@ -305,22 +306,29 @@ function openCropper(file,cb){
       b.style.left=box.x*s+'px';b.style.top=box.y*s+'px';b.style.width=box.w*s+'px';b.style.height=box.h*s+'px';}
     function mount(){
       wrap.innerHTML=''; wrap.appendChild(work);
-      box={x:work.width*0.08,y:work.height*0.08,w:work.width*0.84,h:work.height*0.84};
+      const S=Math.round(Math.min(work.width,work.height)*0.9);         // 정사각형 선택 (변=짧은 쪽 90%)
+      box={x:Math.round((work.width-S)/2),y:Math.round((work.height-S)/2),w:S,h:S};
       const b=document.createElement('div'); b.className='crop-box'; b.id='crBox';
       b.innerHTML='<div class="crop-h tl"></div><div class="crop-h tr"></div><div class="crop-h bl"></div><div class="crop-h br"></div>';
       wrap.appendChild(b); bindDrag(b); requestAnimationFrame(layout);
     }
+    function clampSq(n){ // 정사각형 유지 + 이미지 안에 가두기
+      n.w=n.h=Math.max(40,Math.min(n.w,work.width,work.height));
+      n.x=Math.max(0,Math.min(n.x,work.width-n.w));
+      n.y=Math.max(0,Math.min(n.y,work.height-n.h)); return n;}
     function bindDrag(b){
       let mode=null,sx,sy,ob;
       const start=(e,m)=>{mode=m;sx=e.clientX;sy=e.clientY;ob={...box};e.preventDefault();e.stopPropagation();
         window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);};
       const move=(e)=>{const s=dispScale(),dx=(e.clientX-sx)/s,dy=(e.clientY-sy)/s;let n={...ob};
-        if(mode==='move'){n.x=ob.x+dx;n.y=ob.y+dy;}
-        else{if(mode.includes('l')){n.x=ob.x+dx;n.w=ob.w-dx;}if(mode.includes('r'))n.w=ob.w+dx;
-             if(mode.includes('t')){n.y=ob.y+dy;n.h=ob.h-dy;}if(mode.includes('b'))n.h=ob.h+dy;}
-        n.w=Math.max(40,n.w);n.h=Math.max(40,n.h);
-        n.x=Math.max(0,Math.min(n.x,work.width-n.w));n.y=Math.max(0,Math.min(n.y,work.height-n.h));
-        n.w=Math.min(n.w,work.width-n.x);n.h=Math.min(n.h,work.height-n.y);box=n;layout();};
+        if(mode==='move'){n.x=ob.x+dx;n.y=ob.y+dy;box=clampSq(n);layout();return;}
+        // 정사각형 잠금 리사이즈 — 반대편 모서리를 앵커로 고정
+        const L=mode.includes('l'),T=mode.includes('t');
+        const ax=L?ob.x+ob.w:ob.x, ay=T?ob.y+ob.h:ob.y;                 // 고정 앵커
+        const px=(L?ob.x:ob.x+ob.w)+dx, py=(T?ob.y:ob.y+ob.h)+dy;       // 끄는 모서리
+        const capX=L?ax:work.width-ax, capY=T?ay:work.height-ay;        // 앵커에서 남은 공간
+        const side=Math.max(40,Math.min(Math.max(Math.abs(px-ax),Math.abs(py-ay)),capX,capY));
+        n.w=n.h=side; n.x=L?ax-side:ax; n.y=T?ay-side:ay; box=n;layout();};
       const end=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end);mode=null;};
       b.addEventListener('pointerdown',e=>start(e,'move'));
       ['tl','tr','bl','br'].forEach(m=>b.querySelector('.'+m).addEventListener('pointerdown',e=>start(e,m)));
@@ -329,9 +337,9 @@ function openCropper(file,cb){
       const x=c.getContext('2d');x.translate(c.width,0);x.rotate(Math.PI/2);x.drawImage(work,0,0);work=c;mount();};
     ov.querySelector('#crCancel').onclick=()=>{window.removeEventListener('resize',layout);ov.remove();};
     ov.querySelector('#crOk').onclick=()=>{
-      const CAP=1000,s=Math.min(1,CAP/Math.max(box.w,box.h)),out=document.createElement('canvas');
-      out.width=Math.round(box.w*s);out.height=Math.round(box.h*s);
-      out.getContext('2d').drawImage(work,box.x,box.y,box.w,box.h,0,0,out.width,out.height);
+      const CAP=1000,side=Math.round(Math.min(CAP,box.w)),out=document.createElement('canvas');
+      out.width=out.height=side;                                        // 항상 정사각형 출력
+      out.getContext('2d').drawImage(work,box.x,box.y,box.w,box.w,0,0,side,side);
       const data=out.toDataURL('image/jpeg',0.85);window.removeEventListener('resize',layout);ov.remove();cb(data);};
     mount(); window.addEventListener('resize',layout);
   };
