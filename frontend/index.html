@@ -515,11 +515,13 @@ function mountCurtain(cv, slot){
     cv.width=W*DPR;cv.height=H*DPR;x.setTransform(DPR,0,0,DPR,0,0);
     const cr=cv.getBoundingClientRect(), ir=slot.getBoundingClientRect();
     let _ty=0;try{_ty=(new DOMMatrix(getComputedStyle(slot).transform)).m42||0;}catch(e){}  // 낙하 애니 중에도 정지 위치 기준
-    const topY=Math.max(0,(ir.bottom-_ty)-cr.top-2), availH=Math.max(40,H-topY-4);
+    const penBottom=Math.max(0,(ir.bottom-_ty)-cr.top);   // 만년필 아래 끝
     const bandW=W*0.9, bandX=(W-bandW)/2, colW=bandW/N;   // N열 고정, 가운데
+    const availH=Math.max(40,H-penBottom-26);
     // 폭·높이 둘 다 맞춰 글자 크기만 산출 — 줄 구성은 절대 안 바뀜
     FS=Math.max(11,Math.min(26,Math.floor(Math.min(colW/1.12,(availH/MAXLEN)/1.28))));
     SP=FS*1.28;RADIUS=FS*2.5;DROP=H*0.10;
+    const topY=penBottom+Math.round(FS*0.7);   // 첫 글자가 만년필 끝 바로 아래에서 시작(펜이 안 가림)
     cols=[];
     for(let ci=0;ci<N;ci++){
       const colX=bandX+bandW-(ci+0.5)*colW;               // 우→좌 (세로쓰기)
