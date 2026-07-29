@@ -37,7 +37,7 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
   body{font-family:var(--font);color:var(--ink);background:var(--canvas);-webkit-font-smoothing:antialiased;
-    line-height:1.5;min-height:100dvh;display:flex;align-items:safe center;justify-content:center;padding:24px;position:relative;overflow-x:hidden;}
+    line-height:1.5;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;overflow-x:hidden;}
   .backdrop{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
   .backdrop b{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--font);
     font-weight:900;font-size:min(62vw,900px);color:#ececec;letter-spacing:-.05em;white-space:nowrap;user-select:none;}
@@ -70,7 +70,7 @@
   .hero-fore *{pointer-events:none;}
   .hero-title .cover-year{font-size:clamp(18px,4vw,30px);}
   .hero-title .cover-day{font-size:clamp(26px,6.5vw,46px);}
-  .hero-img{display:block;margin:6px auto 0;height:auto;width:auto;max-height:15vh;max-width:82%;
+  .hero-img{display:block;margin:6px auto 0;height:auto;width:auto;max-height:13.5vh;max-width:74%;
     object-fit:contain;filter:drop-shadow(0 10px 20px rgba(0,0,0,.16));
     animation:penDrop .95s cubic-bezier(.2,.8,.25,1) both;transform-origin:50% 0;}
   @keyframes penDrop{0%{transform:translateY(-15vh) rotate(-1.6deg);opacity:0}
@@ -538,7 +538,7 @@ function mountCurtain(cv, slot){
     const bandW=W*0.9, bandX=(W-bandW)/2, colW=bandW/N;   // N열 고정, 가운데
     const availH=Math.max(40,H-penBottom-26);
     // 폭·높이 둘 다 맞춰 글자 크기만 산출 — 줄 구성은 절대 안 바뀜
-    FS=Math.max(11,Math.min(26,Math.floor(Math.min(colW/1.12,(availH/MAXLEN)/1.28))));
+    FS=Math.round(0.9*Math.max(11,Math.min(26,Math.floor(Math.min(colW/1.12,(availH/MAXLEN)/1.28)))));  // 발 90% 축소
     SP=FS*1.28;RADIUS=FS*2.5;DROP=H*0.10;
     const topY=penBottom+Math.round(FS*0.7);   // 첫 글자가 만년필 끝 바로 아래에서 시작(펜이 안 가림)
     cols=[];
