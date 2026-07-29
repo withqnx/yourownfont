@@ -71,7 +71,7 @@ def template() -> Response:
     return Response(
         content=pdf,
         media_type="application/pdf",
-        headers={"Content-Disposition": 'attachment; filename="2026spell-template.pdf"'},
+        headers={"Content-Disposition": 'attachment; filename="spell2026-template.pdf"'},
     )
 
 
