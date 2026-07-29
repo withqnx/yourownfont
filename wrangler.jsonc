@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "yourownfont",
+  "name": "spell2026",
   "main": "src/index.ts",
   "compatibility_date": "2026-06-01",
   "containers": [

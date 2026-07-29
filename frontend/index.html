@@ -59,6 +59,7 @@
   @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
   .label{font-size:12px;letter-spacing:.08em;color:var(--mid);text-transform:uppercase;margin-bottom:14px;}
   .display{font-weight:900;letter-spacing:-.04em;line-height:1.08;font-size:clamp(30px,6.5vw,46px);}
+  .display.quote{font-weight:500;letter-spacing:-.012em;}   /* 제뜨들 문장: 볼드 완화 */
   .old{font-family:var(--old);}
   .yet{font-family:"NMJyet",serif !important;}  /* 나눔명조 옛한글 — 첫가끝 조합(아래아 합쳐짐). 서문 전용, 폴백 금지 */
   .cover-year{font-weight:100;font-size:clamp(40px,9vw,72px);letter-spacing:-.03em;line-height:1;}
@@ -70,7 +71,7 @@
   .hero-fore *{pointer-events:none;}
   .hero-title .cover-year{font-size:clamp(18px,4vw,30px);}
   .hero-title .cover-day{font-size:clamp(26px,6.5vw,46px);}
-  .hero-img{display:block;margin:6px auto 0;height:auto;width:auto;max-height:13.5vh;max-width:74%;
+  .hero-img{display:block;margin:6px auto 0;height:auto;width:auto;max-height:16vh;max-width:92%;
     object-fit:contain;filter:drop-shadow(0 10px 20px rgba(0,0,0,.16));
     animation:penDrop .95s cubic-bezier(.2,.8,.25,1) both;transform-origin:50% 0;}
   @keyframes penDrop{0%{transform:translateY(-15vh) rotate(-1.6deg);opacity:0}
@@ -177,11 +178,12 @@
   .how-t{font-weight:800;font-size:16px;color:var(--ink);}
   .how-d{font-weight:400;font-size:13px;color:var(--mid);line-height:1.6;margin-top:4px;word-break:keep-all;}
   /* 편안킈: 만년필 소개 문구(한 폰트로 통일) + 가로 3메뉴 */
-  .pen-copy{text-align:center;margin-top:16px;}
-  .pen-copy .l1{font-family:var(--font);font-weight:700;font-size:clamp(19px,5vw,25px);line-height:1.75;letter-spacing:-.01em;color:var(--ink);word-break:keep-all;}
-  .pen-copy .l1 b{font-weight:900;}
-  .pen-copy .l2{margin-top:22px;font-family:var(--font);font-weight:500;font-size:clamp(15px,4vw,18px);line-height:1.75;letter-spacing:-.01em;color:var(--mid);word-break:keep-all;}
-  .pen-copy .l2 b{color:var(--ink);font-weight:800;}
+  .pen-copy{text-align:center;margin-top:6px;}
+  .pen-copy .l1{font-family:var(--font);font-weight:300;font-size:clamp(19px,5vw,25px);line-height:1.75;letter-spacing:-.01em;color:var(--ink);word-break:keep-all;}
+  .pen-copy .l1.hun{font-family:"EBSHunmin","Paperlogy",serif;font-weight:400;letter-spacing:0;line-height:1.68;}   /* 고유한… = 훈민정음체 */
+  .pen-copy .l1 b{font-weight:400;font-size:1.12em;}
+  .pen-copy .l2{margin-top:14px;font-family:var(--font);font-weight:300;font-size:clamp(15px,4vw,18px);line-height:1.75;letter-spacing:-.01em;color:var(--mid);word-break:keep-all;}
+  .pen-copy .l2 b{color:var(--ink);font-weight:600;}
   .pen-menu{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:32px;align-items:end;}
   .pen-card{display:flex;flex-direction:column;align-items:center;gap:12px;background:none;border:0;padding:6px 2px;cursor:pointer;font-family:var(--font);transition:transform .12s;}
   .pen-card:hover{transform:translateY(-3px);}
@@ -266,6 +268,7 @@ function back(){if(stack.length>1){stack.pop();render();}}
 function reset(id){stack=[{id,ctx:{}}];render();}
 function cur(){return stack[stack.length-1];}
 function render(){
+  stopSfx();   // 다른 화면으로 이동하면 재생 중이던 소리 정지
   if(window.__auto){clearInterval(window.__auto);window.__auto=null;}
   const {id,ctx}=cur(); const s=STEPS[id](ctx);
   nav.innerHTML=(stack.length>1?`<button class="back" onclick="back()">←</button>`:'')+`<span class="crumbs">${s.crumb||''}</span>`;
@@ -638,6 +641,7 @@ const SOUNDS=[
 let _audio;
 function playSfx(id){const s=SOUNDS.find(x=>x.id===id);if(!s)return;
   try{if(!_audio)_audio=new Audio();_audio.src=s.src;_audio.currentTime=0;_audio.play().catch(()=>{});}catch(e){}}
+function stopSfx(){try{if(_audio){_audio.pause();_audio.currentTime=0;}}catch(e){}}   // 화면 이동/닫기 시 소리 정지
 // 제뜨들 예시 — 단어 / 문장(명언)
 const WORDS=['사랑','빛','연대','공감','명랑','만년필','사각사각','훈민정음','세종대왕','베개','세종'];
 const SENTENCES=[
@@ -770,13 +774,13 @@ const STEPS={
     <div class="sec-desc">단어부터 명언 한 문장까지, 골라서 만년필로 직접 써보세요.</div>
     <div class="seg"><button class="seg-b on" id="segWord">단어</button><button class="seg-b" id="segSent">문장</button></div>
     <div class="subcard" style="margin-top:12px">
-      <div class="row" style="align-items:center;gap:8px">
-        <button class="btn ghost" id="pprev" aria-label="이전">‹</button>
+      <div class="row" style="align-items:center;gap:4px">
+        <button class="btn ghost" id="pprev" aria-label="이전" style="padding:8px 10px;font-size:22px;line-height:1;flex:none">‹</button>
         <div style="flex:1;text-align:center;min-width:0">
           <div class="muted" id="pwho"></div>
-          <div class="display" id="phrase" style="font-size:clamp(20px,6vw,30px);margin-top:6px;line-height:1.35;word-break:keep-all">…</div>
+          <div class="display" id="phrase" style="font-size:clamp(20px,6vw,30px);margin-top:6px;line-height:1.4;word-break:keep-all;text-wrap:balance">…</div>
         </div>
-        <button class="btn ghost" id="pnext" aria-label="다음">›</button>
+        <button class="btn ghost" id="pnext" aria-label="다음" style="padding:8px 10px;font-size:22px;line-height:1;flex:none">›</button>
       </div>
     </div>
     <button class="btn primary block" id="up" style="margin-top:14px">✍️ 이걸 만년필로 써서 올리기</button>
@@ -802,8 +806,8 @@ const STEPS={
   pyeonan:()=>({crumb:'편안킈',html:`
     <div class="sec-title">편안킈</div>
     <div class="sec-sub">쓰기 편한 한글, 쓰기 편한 만년필</div>
-    <div class="pen-copy" style="margin-top:16px">
-      <p class="l1">고유한 문자를 가진<br>우리나라 문화 수준에 맞는<br><b>만년필</b></p>
+    <div class="pen-copy">
+      <p class="l1 hun">고유한 문자를 가진<br>우리나라 문화 수준에 맞는<br><b>만년필</b></p>
       <p class="l2">한글에 최적화된 무게감과 촉<br><b>탄생하다.</b></p>
     </div>
     <div class="pen-menu">
@@ -896,7 +900,9 @@ const WIRE={
     const segW=el.querySelector('#segWord'),segS=el.querySelector('#segSent');
     const cur=()=>mode==='word'?{who:'',text:WORDS[i]}:SENTENCES[i];
     const len=()=>mode==='word'?WORDS.length:SENTENCES.length;
-    function show(){const c=cur();who.textContent=c.who||'';ph.textContent=mode==='word'?c.text:'“'+c.text+'”';}
+    function show(){const c=cur();who.textContent=c.who||'';
+      if(mode==='word'){ph.textContent=c.text;ph.classList.remove('quote');ph.style.fontSize='';}
+      else{ph.innerHTML='“'+esc(c.text).replace(/, /g,',<br>')+'”';ph.classList.add('quote');ph.style.fontSize='clamp(16px,4.6vw,22px)';}}   // 문장: 작게+쉼표 줄바꿈+balance로 의미단위 2줄
     function setMode(m){mode=m;i=0;segW.classList.toggle('on',m==='word');segS.classList.toggle('on',m==='sentence');show();}
     segW.onclick=()=>setMode('word');segS.onclick=()=>setMode('sentence');
     el.querySelector('#pprev').onclick=()=>{i=(i-1+len())%len();show();};
@@ -972,14 +978,15 @@ window.openGallery=(items,start,opts)=>{opts=opts||{};let i=start||0;
   const img=o.querySelector('.lb-img'),cnt=o.querySelector('.lb-count'),rep=o.querySelector('.lb-report');
   function show(){img.src=items[i].image;cnt.textContent=(i+1)+' / '+items.length;rep.textContent='신고';rep.disabled=false;if(opts.onIndex)opts.onIndex(i,items[i]);}
   function nav(d){if(items.length<2)return;i=(i+d+items.length)%items.length;show();}
+  const close=()=>{stopSfx();o.remove();};   // 닫으면 재생 중이던 소리도 정지
   o.querySelectorAll('.lb-arw').forEach(b=>b.onclick=e=>{e.stopPropagation();nav(+b.dataset.d);});
-  o.querySelector('.lb-x').onclick=()=>o.remove();
+  o.querySelector('.lb-x').onclick=close;
   rep.onclick=async e=>{e.stopPropagation();rep.disabled=true;const it=items[i];
     const url=opts.kind==='sagak'?('/api/sagak/'+it.id+'/report'):('/api/posts/'+it.id+'/report');
     try{await api(url,{method:'POST'});}catch(_){}rep.textContent='신고 완료';};
   let sx=null;o.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
   o.addEventListener('touchend',e=>{if(sx==null)return;const dx=e.changedTouches[0].clientX-sx;sx=null;if(Math.abs(dx)>40)nav(dx<0?1:-1);});
-  o.addEventListener('click',e=>{if(e.target===o)o.remove();});
+  o.addEventListener('click',e=>{if(e.target===o)close();});
   document.body.appendChild(o);show();};
 window.reportPost=async(id,btn)=>{if(!confirm('이 글을 신고할까요? 즉시 숨겨집니다.'))return;try{await api(`/api/posts/${id}/report`,{method:'POST'});btn.closest('.gcard,.post').remove();}catch(e){alert(e.message);}};
 window.likeC=async(id,btn)=>{try{const d=await api(`/api/challenge/${id}/like`,{method:'POST'});btn.classList.add('on');btn.textContent='♥ '+d.likes;}catch(e){}};

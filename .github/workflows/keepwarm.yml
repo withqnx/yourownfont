@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Ping app until awake
         run: |
-          URL="https://yourownfont.onrender.com/"
+          URL="https://spell2026.onrender.com/"
           for i in 1 2 3 4 5; do
             code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL") || code=000
             echo "attempt $i -> HTTP $code"

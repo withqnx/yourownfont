@@ -13,7 +13,7 @@
 2. 대시보드 → **New +** → **Web Service**
 3. **"Public Git Repository"** 칸에 URL 붙여넣기: `https://github.com/withqnx/yourownfont`
 4. Render가 `Dockerfile` 자동 인식 → **Instance Type: Free** → **Create Web Service**
-5. 첫 빌드 완료 후 `https://yourownfont.onrender.com` 형태 URL 발급
+5. 첫 빌드 완료 후 `https://spell2026.onrender.com` 형태 URL 발급
 
 **무료 플랜 특성:** 15분간 요청이 없으면 잠들고, 다음 접속 시 콜드스타트 ~1분. 이후엔 정상 속도.
 
@@ -63,7 +63,7 @@ open -a Docker            # 데몬이 떠 있어야 함
 npm run deploy            # = wrangler deploy
 ```
 
-배포가 끝나면 `https://yourownfont.<your-subdomain>.workers.dev` 형태의 URL이 출력됩니다.
+배포가 끝나면 `https://spell2026.<your-subdomain>.workers.dev` 형태의 URL이 출력됩니다.
 
 ### Docker 없이 검증만 하고 싶을 때
 
