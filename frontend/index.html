@@ -208,6 +208,13 @@
   .collage{position:relative;width:100%;height:58dvh;overflow:hidden;margin-top:8px;}
   .collage img{position:absolute;max-width:46%;filter:drop-shadow(0 3px 8px rgba(0,0,0,.18));cursor:pointer;transition:transform .25s cubic-bezier(.2,.7,.2,1);}
   .collage .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mid);font-size:13px;}
+  /* 벽돌 사진 벽 (사맛디·제뜨들 공용) + 라이트박스 */
+  .brick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;max-height:56dvh;overflow-y:auto;padding-right:2px;}
+  .brick img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;background:var(--surface);cursor:pointer;transition:transform .18s;}
+  .brick img:active{transform:scale(.97);}
+  .brick .empty{grid-column:1/-1;text-align:center;color:var(--mid);font-size:13px;padding:34px 0;}
+  .lightbox{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out;}
+  .lightbox img{max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.5);}
   .scatter{position:relative;width:100%;height:44dvh;margin-top:12px;overflow:hidden;}
   .scatter img{position:absolute;max-width:34%;max-height:38%;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(0,0,0,.12));transition:transform .25s cubic-bezier(.2,.7,.2,1);}
   .scatter img:hover{transform:scale(1.08);}
@@ -685,7 +692,7 @@ const STEPS={
     </div>
     <button class="btn primary block" id="up" style="margin-top:12px">✍️ 소리를 만년필로 써서 올리기</button>
     <div id="sstatus"></div>
-    <div class="scatter" id="scatter"></div>`}),
+    <div class="brick" id="scatter"></div>`}),
 
   // ---------- 제뜨들 : 제 뜻을 펼친 문구 (대한독립만세 써서 → 벽) ----------
   rung2:()=>({crumb:'제뜨들',html:`
@@ -713,7 +720,7 @@ const STEPS={
       <div id="reqStatus" class="muted" style="font-size:12px;margin-top:6px"></div>
     </div>
     <div class="muted" id="wallCount" style="margin-top:18px"></div>
-    <div class="collage" id="wall" style="margin-top:8px"></div>`}),
+    <div class="brick" id="wall" style="margin-top:8px"></div>`}),
 
   // ---------- 편안킈 : 나만의 폰트 만들기 (체험하기 → 곧 열려요) ----------
   // 편안킈: 만년필 소개 문구 + 가로 3메뉴(베개·세종 → 후기 타임라인, 장군 예정)
@@ -795,15 +802,12 @@ const WIRE={
   rung1:(el)=>{   // 사맛디: 소리 듣기 → 손글씨 사진 업로드 → 누끼 흩뿌림
     let i=0;const name=el.querySelector('#soundName'),st=el.querySelector('#sstatus'),sc=el.querySelector('#scatter');
     const cur=()=>SOUNDS[i];
-    async function loadScatter(){
-      try{const d=await api(`/api/sagak/${cur().id}`);const items=(d.entries||[]).slice(0,14);
+    async function loadScatter(){   // 벽돌처럼 쌓이는 사진 벽
+      try{const d=await api(`/api/sagak/${cur().id}`);const items=(d.entries||[]).slice(0,60);
         if(!items.length){sc.innerHTML='<div class="empty">이 소리의 첫 글씨를 남겨보세요.</div>';return;}
-        const cuts=await Promise.all(items.map(e=>cutout(e.image)));sc.innerHTML='';
-        cuts.forEach((src,k)=>{const im=document.createElement('img');im.src=src;im.loading='lazy';
-          im.style.left=(4+(k%4)/3*64+((k*7)%9-4))+'%';im.style.top=(3+Math.floor(k/4)/3*72+((k*5)%7-3))+'%';
-          im.style.transform='rotate('+(((k*47)%16)-8)+'deg)';
-          im.onclick=()=>{im.style.zIndex=9;im.style.transform='scale(1.9)';};
-          sc.appendChild(im);});
+        sc.innerHTML='';
+        items.forEach(e=>{const im=document.createElement('img');im.src=e.image;im.loading='lazy';
+          im.onclick=()=>showPhoto(e.image);sc.appendChild(im);});
       }catch(e){sc.innerHTML='<div class="empty">불러오지 못했어요</div>';}
     }
     function show(){name.textContent=cur().name;loadScatter();}
@@ -821,6 +825,11 @@ const WIRE={
       {who:'이순신',text:'죽고자 하면 살 것이고, 살고자 하면 죽을 것이다.'},
       {who:'신채호',text:'역사를 잊은 민족에게 미래는 없다.'},
       {who:'김구',text:'오직 한없이 가지고 싶은 것은 높은 문화의 힘이다.'},
+      {who:'김대중',text:'서생적 문제의식과 상인적 현실감각을 가져라.'},
+      {who:'김대중',text:'행동하지 않는 양심은 악의 편이다.'},
+      {who:'노무현',text:'민주주의 최후의 보루는 깨어있는 시민의 조직된 힘입니다.'},
+      {who:'문재인',text:'사람이 먼저다.'},
+      {who:'이재명',text:'결국 국민이 합니다.'},
     ];
     let pi=0;
     const who=el.querySelector('#pwho'),ph=el.querySelector('#phrase');
@@ -836,20 +845,13 @@ const WIRE={
       try{await api('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});
         rt.value='';rs.textContent='전달됐어요 · 운영자가 확인할게요 🙏';}
       catch(e){rs.textContent='⚠ '+e.message;}};
-    // 누끼 손글씨 콜라주 (잉크만 따서 겹쳐 흐르게)
+    // 벽돌처럼 쌓이는 사진 벽 (구경용)
     async function loadWall(){try{const d=await api('/api/posts/letter');const posts=d.posts||[];
       cnt.textContent=posts.length?`${posts.length.toLocaleString()}명이 함께 썼어요`:'';
       if(!posts.length){wall.innerHTML='<div class="empty">첫 글씨를 남겨보세요.</div>';return;}
-      const cuts=await Promise.all(posts.slice(0,24).map(p=>cutout(p.image)));
       wall.innerHTML='';
-      cuts.forEach((src,k)=>{const im=document.createElement('img');im.src=src;im.loading='lazy';
-        im.style.left=(1+(k%3)/2.6*66+((k*13)%15-7))+'%';
-        im.style.top=(1+Math.floor(k/3)*19+((k*7)%9-4))+'%';
-        im.style.width=(30+((k*17)%17))+'%';
-        im.style.transform='rotate('+(((k*29)%16)-8)+'deg)';
-        im.style.zIndex=k;
-        im.onclick=()=>{im.style.zIndex=99;im.style.transform='scale(1.55)';};
-        wall.appendChild(im);});
+      posts.slice(0,60).forEach(p=>{const im=document.createElement('img');im.src=p.image;im.loading='lazy';
+        im.onclick=()=>showPhoto(p.image);wall.appendChild(im);});
     }catch(e){wall.innerHTML='<div class="empty">불러오지 못했어요</div>';}}
     el.querySelector('#up').onclick=()=>pickPhoto(async data=>{st.innerHTML=PEN;const cur=PHRASES[pi];
       try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'letter',image:data,text:cur.text})});
@@ -898,6 +900,7 @@ const WIRE={
     el.querySelector('#loadQ').onclick=load;
   },
 };
+window.showPhoto=(src)=>{const o=document.createElement('div');o.className='lightbox';const im=document.createElement('img');im.src=src;o.appendChild(im);o.onclick=()=>o.remove();document.body.appendChild(o);};
 window.reportPost=async(id,btn)=>{if(!confirm('이 글을 신고할까요? 즉시 숨겨집니다.'))return;try{await api(`/api/posts/${id}/report`,{method:'POST'});btn.closest('.gcard,.post').remove();}catch(e){alert(e.message);}};
 window.likeC=async(id,btn)=>{try{const d=await api(`/api/challenge/${id}/like`,{method:'POST'});btn.classList.add('on');btn.textContent='♥ '+d.likes;}catch(e){}};
 
