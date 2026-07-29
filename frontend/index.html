@@ -77,6 +77,8 @@
     55%{transform:translateY(1.4vh) rotate(1.1deg);opacity:1}
     78%{transform:translateY(-.5vh) rotate(-.5deg);opacity:1}
     100%{transform:translateY(0) rotate(0);opacity:1}}
+  .hero-fore .hero-pen{display:inline-block;pointer-events:auto;touch-action:none;cursor:grab;will-change:transform;}
+  .hero-fore .hero-pen:active{cursor:grabbing;}
   .lead{font-family:var(--old);font-size:18px;color:var(--ink-soft);line-height:1.95;margin-top:18px;word-break:keep-all;}
   .lead .hl{border-bottom:2px solid var(--ember);padding-bottom:1px;}
   .muted{color:var(--mid);font-size:14px;}
@@ -509,7 +511,7 @@ function mountCurtain(cv, slot){
   const x=cv.getContext('2d');
   let FS=20,SP=FS*1.28,RADIUS=60;
   const GRAV=0.10,FRIC=0.92,ITER=4,PUSH=1.7;   // 데스크톱 과한 흔들림 완화
-  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null,dropT0=0,DROP=60;
+  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null,dropT0=0,DROP=60,dragX=0;
   function layout(){
     DPR=Math.min(2,window.devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;if(!W||!H)return false;
     cv.width=W*DPR;cv.height=H*DPR;x.setTransform(DPR,0,0,DPR,0,0);
@@ -542,10 +544,10 @@ function mountCurtain(cv, slot){
         if(active){const dx=p.x-mouse.x,dy=p.y-mouse.y,d=Math.hypot(dx,dy);
           if(d<RADIUS&&d>0.01){const f=(RADIUS-d)/RADIUS*PUSH; p.x+=dx/d*f; p.y+=dy/d*f;}}
       }
-      for(let k=0;k<ITER;k++){P[0].x=col.x0;P[0].y=col.y0+doff;
+      for(let k=0;k<ITER;k++){P[0].x=col.x0+dragX;P[0].y=col.y0+doff;
         for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,diff=(d-SP)/d;
           if(i-1===0){b.x-=dx*diff;b.y-=dy*diff;}else{a.x+=dx*diff*0.5;a.y+=dy*diff*0.5;b.x-=dx*diff*0.5;b.y-=dy*diff*0.5;}}}
-      P[0].x=col.x0;P[0].y=col.y0+doff;
+      P[0].x=col.x0+dragX;P[0].y=col.y0+doff;
     }
   }
   function glyph(p,i,len,alpha){    // 볼드 구절은 붉게·크게·부드럽게 숨쉬듯 맥동, 나머지는 은은히
@@ -573,11 +575,27 @@ function mountCurtain(cv, slot){
   function loop(ts){if(!document.body.contains(cv))return;requestAnimationFrame(loop);
     ts=ts||performance.now();if(!_prev)_prev=ts;let dt=ts-_prev;_prev=ts;if(dt>50)dt=50;
     if(parting){drawPart();return;}
+    tickDrag();
     _acc+=dt;let did=false;while(_acc>=16.67){T+=0.016;step();_acc-=16.67;did=true;}  // 물리 60fps 고정(고주사율서도 동일 속도)
     if(did)draw();}
   cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;mouse.x=mx;mouse.y=my;active=true;cv.style.cursor=hit(mx,my)?'pointer':'default';});
   cv.addEventListener('pointerleave',()=>{active=false;mouse.x=mouse.y=-1e4;});
   cv.addEventListener('click',e=>{if(parting)return;const r=cv.getBoundingClientRect();const g=hit(e.clientX-r.left,e.clientY-r.top);if(g){parting=true;partT0=performance.now();partGo=g;}});
+  // 만년필을 좌우로 잡아끌면 발이 결 따라 흔들림 (놓으면 가운데로 스윙백)
+  const pen=slot.closest('.hero-pen')||slot;
+  let dragging=false,dragSX=0,dragBase=0,relT0=0,relFrom=0;
+  function penTF(){pen.style.transform='translateX('+dragX.toFixed(1)+'px) rotate('+(dragX*0.015).toFixed(2)+'deg)';}
+  pen.addEventListener('pointerdown',e=>{dragging=true;relT0=0;dragSX=e.clientX;dragBase=dragX;try{pen.setPointerCapture(e.pointerId);}catch(_){}pen.style.cursor='grabbing';});
+  pen.addEventListener('pointermove',e=>{if(!dragging)return;const mx=W*0.22;dragX=Math.max(-mx,Math.min(mx,dragBase+(e.clientX-dragSX)));penTF();});
+  pen.addEventListener('pointerup',e=>{if(!dragging)return;dragging=false;pen.style.cursor='grab';relFrom=dragX;relT0=performance.now();});
+  pen.addEventListener('pointercancel',()=>{if(!dragging)return;dragging=false;pen.style.cursor='grab';relFrom=dragX;relT0=performance.now();});
+  function tickDrag(){
+    if(dragging||!relT0)return;
+    const e=(performance.now()-relT0)/650;
+    if(e>=1){dragX=0;relT0=0;}
+    else{const c1=1.6,c3=c1+1,t=e-1;dragX=relFrom*(1-(1+c3*t*t*t+c1*t*t));}   // easeOutBack 스윙백
+    penTF();
+  }
   let ro; if(window.ResizeObserver){ro=new ResizeObserver(()=>{if(!parting)layout();});ro.observe(cv);}
   (async()=>{try{await document.fonts.load('16px "EBSHunmin"');await document.fonts.load('16px "Paperlogy"');}catch(e){}
     if(slot.tagName==='IMG'&&!slot.complete){await new Promise(r=>{slot.onload=r;slot.onerror=r;});}
@@ -640,7 +658,7 @@ const STEPS={
       <div class="hero-fore">
         <div class="hero-title"><div class="cover-year old">2026</div><div class="cover-day old">한글날</div></div>
         <div class="muted" style="margin-top:6px;font-size:13px">훈민정음 반포 580년 · 가갸날 100년</div>
-        <img class="hero-img" id="heroImg" src="/assets/pen-hero-sejong.png" alt="세종 만년필" />
+        <div class="hero-pen" id="heroPen"><img class="hero-img" id="heroImg" src="/assets/pen-hero-sejong.png" alt="세종 만년필" /></div>
       </div>
     </div>`}),
 
