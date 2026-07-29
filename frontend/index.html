@@ -619,7 +619,17 @@ function playKnock(){const c=actx();[0,0.24].forEach(dt=>{const t=c.currentTime+
 function playBell(){const c=actx(),t=c.currentTime;[784,1176,1568].forEach((fr,i)=>{const o=c.createOscillator();o.type='sine';o.frequency.value=fr;const g=c.createGain(),a=0.28/(i+1);g.gain.setValueAtTime(a,t);g.gain.exponentialRampToValueAtTime(0.0008,t+2);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+2);});}
 function playClock(){const c=actx();for(let i=0;i<4;i++){const t=c.currentTime+i*0.5,o=c.createOscillator();o.type='square';o.frequency.value=2100;const g=c.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.28,t+0.004);g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+0.06);}}
 function playDrip(){const c=actx(),t=c.currentTime,o=c.createOscillator();o.type='sine';o.frequency.setValueAtTime(1500,t);o.frequency.exponentialRampToValueAtTime(480,t+0.18);const g=c.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.45,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+0.26);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+0.28);}
-const SOUNDS=[{id:'rain',name:'창밖의 빗소리',play:playRain},{id:'knock',name:'문 두드리는 소리',play:playKnock},{id:'bell',name:'처마 끝 풍경',play:playBell},{id:'clock',name:'시계 초침',play:playClock},{id:'drip',name:'수도꼭지 물방울',play:playDrip}];
+// 실제 SFX (mp3, ≤7초). Audio 하나 재사용 → 사용자 제스처에서 재생(모바일 오토플레이 허용).
+const SOUNDS=[
+  {id:'keyboard',name:'키보드 두드리는 소리',src:'/assets/sfx/sfx-keyboard.mp3'},
+  {id:'water',name:'물에 돌 던지는 소리',src:'/assets/sfx/sfx-water.mp3'},
+  {id:'basketball',name:'농구공 튀기는 소리',src:'/assets/sfx/sfx-basketball.mp3'},
+  {id:'dog',name:'강아지 발걸음 소리',src:'/assets/sfx/sfx-dog.mp3'},
+  {id:'birds',name:'새 지저귀는 소리',src:'/assets/sfx/sfx-birds.mp3'},
+];
+let _audio;
+function playSfx(id){const s=SOUNDS.find(x=>x.id===id);if(!s)return;
+  try{if(!_audio)_audio=new Audio();_audio.src=s.src;_audio.currentTime=0;_audio.play().catch(()=>{});}catch(e){}}
 // 제뜨들 예시 — 단어 / 문장(명언)
 const WORDS=['사랑','빛','연대','공감','명랑','만년필','사각사각','훈민정음','세종대왕','베개','세종'];
 const SENTENCES=[
@@ -741,9 +751,9 @@ const STEPS={
       <div class="how-step"><div class="how-t">3 · 사진 올리기</div>
         <div class="how-d">다른 사람들의 소리 글씨도 함께 구경해보세요.</div></div>
     </div>
-    <button class="btn primary block" id="up" style="margin-top:12px">✍️ 소리를 만년필로 써서 올리기</button>
-    <div id="sstatus"></div>
-    <div class="brick" id="scatter"></div>`}),
+    <button class="btn primary block" id="up" style="margin-top:12px">✍️ 이 소리를 만년필로 써서 올리기</button>
+    <button class="btn ghost block" id="see" style="margin-top:8px">👀 다른 사람 거 보기 · 듣기</button>
+    <div id="sstatus"></div>`}),
 
   // ---------- 제뜨들 : 제 뜻을 펼친 문구 (대한독립만세 써서 → 벽) ----------
   rung2:()=>({crumb:'제뜨들',html:`
@@ -782,7 +792,9 @@ const STEPS={
   // ---------- 편안킈 : 나만의 폰트 만들기 (체험하기 → 곧 열려요) ----------
   // 편안킈: 만년필 소개 문구 + 가로 3메뉴(베개·세종 → 후기 타임라인, 장군 예정)
   pyeonan:()=>({crumb:'편안킈',html:`
-    <div class="pen-copy">
+    <div class="sec-title">편안킈</div>
+    <div class="sec-sub">쓰기 편한 한글, 쓰기 편한 만년필</div>
+    <div class="pen-copy" style="margin-top:16px">
       <p class="l1">고유한 문자를 가진<br>우리나라 문화 수준에 맞는<br><b>만년필</b></p>
       <p class="l2">한글에 최적화된 무게감과 촉<br><b>탄생하다.</b></p>
     </div>
@@ -856,26 +868,19 @@ const WIRE={
   },
   font_result:(el,ctx)=>{const f=new FontFace(ctx.family,`url(${ctx.url})`);f.load().then(x=>{document.fonts.add(x);el.querySelector('#preview').style.fontFamily=`"${ctx.family}"`;}).catch(()=>{});
     const fc=el.querySelector('#fontCard');if(fc)fc.onclick=()=>composeInMyFont(async(_d,text)=>{showCardResult(await renderCard({text,fontAlias:ctx.family,pillar:'날로 ᄡᅮ메 편안킈',caption:'내 손글씨 폰트'}),'내 폰트 · 공유 카드');});},
-  rung1:(el)=>{   // 사맛디: 소리 듣기 → 손글씨 사진 업로드 → 누끼 흩뿌림
-    let i=0;const name=el.querySelector('#soundName'),st=el.querySelector('#sstatus'),sc=el.querySelector('#scatter');
+  rung1:(el)=>{   // 사맛디: 소리 선택 → 듣기 | 쓰기 | 다른 사람 거 보기·듣기
+    let i=0;const name=el.querySelector('#soundName'),st=el.querySelector('#sstatus');
     const cur=()=>SOUNDS[i];
-    async function loadScatter(){   // 벽돌처럼 쌓이는 사진 벽
-      try{const d=await api(`/api/sagak/${cur().id}`);const items=(d.entries||[]).slice(0,60);
-        if(!items.length){sc.innerHTML='<div class="empty">이 소리의 첫 글씨를 남겨보세요.</div>';return;}
-        sc.innerHTML='';
-        items.forEach((e,k)=>{const im=document.createElement('img');im.src=e.image;im.loading='lazy';
-          im.onclick=()=>openGallery(items,k,{kind:'sagak'});sc.appendChild(im);});
-      }catch(e){sc.innerHTML='<div class="empty">불러오지 못했어요</div>';}
-    }
-    function show(){name.textContent=cur().name;loadScatter();}
-    el.querySelector('#playBtn').onclick=()=>{try{cur().play();}catch(e){}name.textContent=cur().name;};
-    el.querySelector('#prev').onclick=()=>{i=(i-1+SOUNDS.length)%SOUNDS.length;show();};
-    el.querySelector('#next').onclick=()=>{i=(i+1)%SOUNDS.length;show();};
+    function show(){name.textContent=cur().name;}
+    el.querySelector('#playBtn').onclick=()=>{playSfx(cur().id);name.textContent=cur().name;};
+    el.querySelector('#prev').onclick=()=>{i=(i-1+SOUNDS.length)%SOUNDS.length;show();playSfx(cur().id);};
+    el.querySelector('#next').onclick=()=>{i=(i+1)%SOUNDS.length;show();playSfx(cur().id);};
+    el.querySelector('#see').onclick=()=>{const s=cur();go('gallery',{kind:'sagak',subject:s.id,label:s.name});};
     el.querySelector('#up').onclick=()=>pickPhoto(async data=>{st.innerHTML=PEN;
       try{await api('/api/sagak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sound:cur().id,image:data})});
-        st.innerHTML='<div class="note ok">올렸어요 · 아래에 더해졌어요</div>';loadScatter();}
+        st.innerHTML='<div class="note ok">올렸어요 · “'+esc(cur().name)+'” 벽에 더해졌어요</div>';}
       catch(e){st.innerHTML=`<div class="note err">⚠ ${e.message}</div>`;}});
-    loadScatter();
+    show();
   },
   rung2:(el)=>{   // 제뜨들: 단어/문장 토글 → 예시 스와이프 → 쓰기 | 갤러리
     let mode='word', i=0;
@@ -900,14 +905,17 @@ const WIRE={
       try{await api('/api/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})});rt.value='';rs.textContent='전달됐어요 · 운영자가 확인할게요 🙏';}
       catch(e){rs.textContent='⚠ '+e.message;}};
   },
-  gallery:(el,ctx)=>{   // subject로 필터된 사진 갤러리 → 탭하면 라이트박스(스와이프·신고)
+  gallery:(el,ctx)=>{   // subject 필터 갤러리 → 라이트박스(스와이프·신고). sagak은 넘길 때 소리 자동재생.
     const wall=el.querySelector('#gwall'),kind=(ctx&&ctx.kind)||'letter',subject=(ctx&&ctx.subject)||'';
-    api(`/api/posts/${kind}?subject=${encodeURIComponent(subject)}`).then(d=>{
-      const posts=d.posts||[];
-      if(!posts.length){wall.innerHTML='<div class="empty">아직 없어요 · 첫 글씨를 남겨보세요</div>';return;}
+    const isSagak=kind==='sagak';
+    const url=isSagak?`/api/sagak/${encodeURIComponent(subject)}`:`/api/posts/${kind}?subject=${encodeURIComponent(subject)}`;
+    api(url).then(d=>{
+      const items=isSagak?(d.entries||[]):(d.posts||[]);
+      if(!items.length){wall.innerHTML='<div class="empty">아직 없어요 · 첫 글씨를 남겨보세요</div>';return;}
       wall.innerHTML='';
-      posts.forEach((p,k)=>{const im=document.createElement('img');im.src=p.image;im.loading='lazy';
-        im.onclick=()=>openGallery(posts,k,{kind:'post'});wall.appendChild(im);});
+      const opts=isSagak?{kind:'sagak',onIndex:()=>playSfx(subject)}:{kind:'post'};
+      items.forEach((p,k)=>{const im=document.createElement('img');im.src=p.image;im.loading='lazy';
+        im.onclick=()=>openGallery(items,k,opts);wall.appendChild(im);});
     }).catch(()=>{wall.innerHTML='<div class="empty">불러오지 못했어요</div>';});
   },
   reviews:(el,ctx)=>{   // 인스타형 후기 타임라인 — reviews.json에서 해당 만년필 후기 로드
