@@ -70,8 +70,13 @@
   .hero-fore *{pointer-events:none;}
   .hero-title .cover-year{font-size:clamp(18px,4vw,30px);}
   .hero-title .cover-day{font-size:clamp(26px,6.5vw,46px);}
-  .hero-img{display:block;margin:4px auto 0;height:auto;width:auto;max-height:20vh;max-width:50%;
-    object-fit:contain;filter:drop-shadow(0 8px 22px rgba(0,0,0,.14));}
+  .hero-img{display:block;margin:6px auto 0;height:auto;width:auto;max-height:15vh;max-width:82%;
+    object-fit:contain;filter:drop-shadow(0 10px 20px rgba(0,0,0,.16));
+    animation:penDrop .95s cubic-bezier(.2,.8,.25,1) both;transform-origin:50% 0;}
+  @keyframes penDrop{0%{transform:translateY(-15vh) rotate(-1.6deg);opacity:0}
+    55%{transform:translateY(1.4vh) rotate(1.1deg);opacity:1}
+    78%{transform:translateY(-.5vh) rotate(-.5deg);opacity:1}
+    100%{transform:translateY(0) rotate(0);opacity:1}}
   .lead{font-family:var(--old);font-size:18px;color:var(--ink-soft);line-height:1.95;margin-top:18px;word-break:keep-all;}
   .lead .hl{border-bottom:2px solid var(--ember);padding-bottom:1px;}
   .muted{color:var(--mid);font-size:14px;}
@@ -504,16 +509,17 @@ function mountCurtain(cv, slot){
   const x=cv.getContext('2d');
   let FS=20,SP=FS*1.28,RADIUS=60;
   const GRAV=0.10,FRIC=0.92,ITER=4,PUSH=1.7;   // 데스크톱 과한 흔들림 완화
-  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null;
+  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null,dropT0=0,DROP=60;
   function layout(){
     DPR=Math.min(2,window.devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;if(!W||!H)return false;
     cv.width=W*DPR;cv.height=H*DPR;x.setTransform(DPR,0,0,DPR,0,0);
     const cr=cv.getBoundingClientRect(), ir=slot.getBoundingClientRect();
-    const topY=Math.max(0,ir.bottom-cr.top-2), availH=Math.max(40,H-topY-4);
+    let _ty=0;try{_ty=(new DOMMatrix(getComputedStyle(slot).transform)).m42||0;}catch(e){}  // 낙하 애니 중에도 정지 위치 기준
+    const topY=Math.max(0,(ir.bottom-_ty)-cr.top-2), availH=Math.max(40,H-topY-4);
     const bandW=W*0.9, bandX=(W-bandW)/2, colW=bandW/N;   // N열 고정, 가운데
     // 폭·높이 둘 다 맞춰 글자 크기만 산출 — 줄 구성은 절대 안 바뀜
     FS=Math.max(11,Math.min(26,Math.floor(Math.min(colW/1.12,(availH/MAXLEN)/1.28))));
-    SP=FS*1.28;RADIUS=FS*2.5;
+    SP=FS*1.28;RADIUS=FS*2.5;DROP=H*0.10;
     cols=[];
     for(let ci=0;ci<N;ci++){
       const colX=bandX+bandW-(ci+0.5)*colW;               // 우→좌 (세로쓰기)
@@ -523,17 +529,21 @@ function mountCurtain(cv, slot){
     }
     return true;
   }
+  function dropOffset(){   // 발 앵커를 만년필의 실제 translateY에 붙임 → 함께 떨어지며 출렁(글자는 관성으로 살짝 흔들)
+    try{return (new DOMMatrix(getComputedStyle(slot).transform)).m42||0;}catch(e){return 0;}
+  }
   function step(){
+    const doff=dropOffset();
     for(const col of cols){const P=col.pts;
       for(let i=1;i<P.length;i++){const p=P[i];
         const vx=(p.x-p.px)*FRIC, vy=(p.y-p.py)*FRIC; p.px=p.x;p.py=p.y; p.x+=vx; p.y+=vy+GRAV;
         if(active){const dx=p.x-mouse.x,dy=p.y-mouse.y,d=Math.hypot(dx,dy);
           if(d<RADIUS&&d>0.01){const f=(RADIUS-d)/RADIUS*PUSH; p.x+=dx/d*f; p.y+=dy/d*f;}}
       }
-      for(let k=0;k<ITER;k++){P[0].x=col.x0;P[0].y=col.y0;
+      for(let k=0;k<ITER;k++){P[0].x=col.x0;P[0].y=col.y0+doff;
         for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,diff=(d-SP)/d;
           if(i-1===0){b.x-=dx*diff;b.y-=dy*diff;}else{a.x+=dx*diff*0.5;a.y+=dy*diff*0.5;b.x-=dx*diff*0.5;b.y-=dy*diff*0.5;}}}
-      P[0].x=col.x0;P[0].y=col.y0;
+      P[0].x=col.x0;P[0].y=col.y0+doff;
     }
   }
   function glyph(p,i,len,alpha){    // 볼드 구절은 붉게·크게·부드럽게 숨쉬듯 맥동, 나머지는 은은히
@@ -569,7 +579,7 @@ function mountCurtain(cv, slot){
   let ro; if(window.ResizeObserver){ro=new ResizeObserver(()=>{if(!parting)layout();});ro.observe(cv);}
   (async()=>{try{await document.fonts.load('16px "EBSHunmin"');await document.fonts.load('16px "Paperlogy"');}catch(e){}
     if(slot.tagName==='IMG'&&!slot.complete){await new Promise(r=>{slot.onload=r;slot.onerror=r;});}
-    let tries=0;(function w(){if(layout()||tries++>60)loop();else requestAnimationFrame(w);})();})();
+    let tries=0;(function w(){if(layout()||tries++>60){dropT0=performance.now();loop();}else requestAnimationFrame(w);})();})();
 }
 
 // ---- 사각사각: 실생활 소리 (WebAudio 합성; 나중에 실제 녹음으로 교체 가능) ----
@@ -628,7 +638,7 @@ const STEPS={
       <div class="hero-fore">
         <div class="hero-title"><div class="cover-year old">2026</div><div class="cover-day old">한글날</div></div>
         <div class="muted" style="margin-top:6px;font-size:13px">훈민정음 반포 580년 · 가갸날 100년</div>
-        <img class="hero-img" id="heroImg" src="/assets/sejong.png" alt="세종대왕 동상" />
+        <img class="hero-img" id="heroImg" src="/assets/pen-hero-sejong.png" alt="세종 만년필" />
       </div>
     </div>`}),
 
