@@ -186,7 +186,7 @@
   .pen-card{display:flex;flex-direction:column;align-items:center;gap:12px;background:none;border:0;padding:6px 2px;cursor:pointer;font-family:var(--font);transition:transform .12s;}
   .pen-card:hover{transform:translateY(-3px);}
   .pen-card .th{width:100%;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-  .pen-card .th img{max-width:90%;max-height:90%;object-fit:contain;}   /* 사진 90% → 여백 */
+  .pen-card .th img{max-width:72%;max-height:72%;object-fit:contain;}   /* 프레임 유지, 사진만 축소 → 여백 */
   .pen-card .pen-logo{height:18px;width:auto;max-width:90%;object-fit:contain;}
   .pen-card.soon-card{cursor:default;}
   .pen-card.soon-card:hover{transform:none;}
@@ -528,15 +528,16 @@ function mountCurtain(cv, slot){
   const N=LINES.length, MAXLEN=Math.max(1,...LINES.map(l=>l.length));
   const x=cv.getContext('2d');
   let FS=20,SP=FS*1.28,RADIUS=60;
-  const GRAV=0.10,FRIC=0.92,ITER=4,PUSH=1.7;   // 데스크톱 과한 흔들림 완화
-  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null,dropT0=0,DROP=60,dragX=0;
+  const GRAV=0.10,FRIC=0.90,ITER=4,PUSH=3.2;   // PUSH↑ 만지면 크게 흔들림, FRIC↓ 빨리 잦아듦
+  const SPRING=0.14, MAXDX=0.9;                // 제자리 복원력 / 열 이탈 한계(칸 폭 비율) → 엉킴 방지
+  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null,dropT0=0,DROP=60,dragX=0,colW=40;
   function layout(){
     DPR=Math.min(2,window.devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;if(!W||!H)return false;
     cv.width=W*DPR;cv.height=H*DPR;x.setTransform(DPR,0,0,DPR,0,0);
     const cr=cv.getBoundingClientRect(), ir=slot.getBoundingClientRect();
     let _ty=0;try{_ty=(new DOMMatrix(getComputedStyle(slot).transform)).m42||0;}catch(e){}  // 낙하 애니 중에도 정지 위치 기준
     const penBottom=Math.max(0,(ir.bottom-_ty)-cr.top);   // 만년필 아래 끝
-    const bandW=W*0.9, bandX=(W-bandW)/2, colW=bandW/N;   // N열 고정, 가운데
+    const bandW=W*0.9, bandX=(W-bandW)/2; colW=bandW/N;   // N열 고정, 가운데 (colW는 step()의 이탈 한계에도 씀)
     const availH=Math.max(40,H-penBottom-26);
     // 폭·높이 둘 다 맞춰 글자 크기만 산출 — 줄 구성은 절대 안 바뀜
     FS=Math.round(0.9*Math.max(11,Math.min(26,Math.floor(Math.min(colW/1.12,(availH/MAXLEN)/1.28)))));  // 발 90% 축소
@@ -560,9 +561,12 @@ function mountCurtain(cv, slot){
       for(let i=1;i<P.length;i++){const p=P[i];
         if(!isFinite(p.x)||!isFinite(p.y)){p.x=p.px=rx;p.y=p.py=col.y0+i*SP+doff;continue;}  // NaN → 제자리로 (엉킴 방지)
         const vx=(p.x-p.px)*FRIC, vy=(p.y-p.py)*FRIC; p.px=p.x;p.py=p.y; p.x+=vx; p.y+=vy+GRAV;
-        p.x+=(rx-p.x)*0.05;   // 세로로 당기는 복원력 → 흔들려도 언제나 제자리(엉킴 없음)
         if(active){const dx=p.x-mouse.x,dy=p.y-mouse.y,d=Math.hypot(dx,dy);
           if(d<RADIUS&&d>0.01){const f=(RADIUS-d)/RADIUS*PUSH; p.x+=dx/d*f; p.y+=dy/d*f;}}
+        // 제자리로 당김 — px도 같이 옮겨 관성이 되튀지 않게(진동·엉킴 방지)
+        const back=(rx-p.x)*SPRING; p.x+=back; p.px+=back;
+        const lim=colW*MAXDX;                      // 옆 열을 넘지 못하게 하드 클램프 → 절대 안 엉킴
+        if(p.x>rx+lim){p.x=rx+lim;p.px=p.x;} else if(p.x<rx-lim){p.x=rx-lim;p.px=p.x;}
       }
       for(let k=0;k<ITER;k++){P[0].x=rx;P[0].y=col.y0+doff;
         for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,diff=(d-SP)/d;
@@ -606,7 +610,9 @@ function mountCurtain(cv, slot){
   let dragging=false,dragSX=0,dragBase=0,relT0=0,relFrom=0;
   function penTF(){pen.style.transform='translateX('+dragX.toFixed(1)+'px) rotate('+(dragX*0.015).toFixed(2)+'deg)';}
   pen.addEventListener('pointerdown',e=>{dragging=true;relT0=0;dragSX=e.clientX;dragBase=dragX;try{pen.setPointerCapture(e.pointerId);}catch(_){}pen.style.cursor='grabbing';});
-  pen.addEventListener('pointermove',e=>{if(!dragging)return;const mx=W*0.22;dragX=Math.max(-mx,Math.min(mx,dragBase+(e.clientX-dragSX)));penTF();});
+  // 저항: 끈 거리의 35%만 따라오고, 최대 이동폭도 좁게(W*0.08) → 만년필은 크게 안 움직임
+  pen.addEventListener('pointermove',e=>{if(!dragging)return;const mx=W*0.08;
+    dragX=Math.max(-mx,Math.min(mx,dragBase+(e.clientX-dragSX)*0.35));penTF();});
   pen.addEventListener('pointerup',e=>{if(!dragging)return;dragging=false;pen.style.cursor='grab';relFrom=dragX;relT0=performance.now();});
   pen.addEventListener('pointercancel',()=>{if(!dragging)return;dragging=false;pen.style.cursor='grab';relFrom=dragX;relT0=performance.now();});
   function tickDrag(){
