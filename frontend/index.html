@@ -179,9 +179,12 @@
   .how-d{font-weight:400;font-size:13px;color:var(--mid);line-height:1.6;margin-top:4px;word-break:keep-all;}
   /* 편안킈: 만년필 소개 문구(한 폰트로 통일) + 가로 3메뉴 */
   .pen-copy{text-align:center;margin-top:10px;}
-  .pen-copy .light{font-family:var(--font);font-weight:300;font-size:clamp(15px,4vw,18px);line-height:1.9;letter-spacing:-.01em;color:var(--mid);word-break:keep-all;}   /* 연하고 얇은 */
-  .pen-copy .quote{margin-top:24px;font-family:"Nanum Myeongjo","AppleMyungjo",Batang,serif;font-style:italic;font-weight:400;font-size:clamp(20px,5.6vw,27px);line-height:1.72;letter-spacing:-.01em;color:var(--ink);word-break:keep-all;}   /* 인용체 이탤릭 */
-  .pen-copy .quote b{font-weight:700;font-size:1.12em;}
+  .pen-copy .light{font-family:var(--font);font-weight:500;font-size:clamp(15px,4vw,18px);line-height:1.9;letter-spacing:-.01em;color:var(--ink-soft);word-break:keep-all;}   /* 덜 연하게 */
+  /* 인용: 위아래 쌍따옴표 + 한 폰트·한 굵기로 통일(이탤릭 없음), 작게 */
+  .pen-copy .quote{margin-top:22px;font-family:var(--font);font-weight:500;font-size:clamp(16px,4.3vw,20px);line-height:1.72;letter-spacing:-.01em;color:var(--ink);word-break:keep-all;}
+  .pen-copy .quote::before,.pen-copy .quote::after{display:block;font-size:1.5em;font-weight:700;line-height:.6;color:var(--mid);}
+  .pen-copy .quote::before{content:'“';margin-bottom:10px;}
+  .pen-copy .quote::after{content:'”';margin-top:16px;}
   .pen-menu{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:32px;align-items:end;}
   .pen-card{display:flex;flex-direction:column;align-items:center;gap:12px;background:none;border:0;padding:6px 2px;cursor:pointer;font-family:var(--font);transition:transform .12s;}
   .pen-card:hover{transform:translateY(-3px);}
@@ -572,6 +575,10 @@ function mountCurtain(cv, slot){
         for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,diff=(d-SP)/d;
           if(i-1===0){b.x-=dx*diff;b.y-=dy*diff;}else{a.x+=dx*diff*0.5;a.y+=dy*diff*0.5;b.x-=dx*diff*0.5;b.y-=dy*diff*0.5;}}}
       P[0].x=rx;P[0].y=col.y0+doff;
+      // 세로 순서 강제: 각 글자는 반드시 윗 글자보다 아래(최소 SP*0.45). 위로 넘어가
+      // 뒤집히거나(180°) 접히는 엉킴을 원천 차단 — 발은 늘 아래로만 늘어진다.
+      for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i],minY=a.y+SP*0.45;
+        if(b.y<minY){b.y=minY;b.py=b.y;}}
     }
   }
   function glyph(p,i,len,alpha){    // 볼드 구절은 붉게·크게·부드럽게 숨쉬듯 맥동, 나머지는 은은히
@@ -813,7 +820,7 @@ const STEPS={
     <div class="sec-title">편안킈</div>
     <div class="pen-copy">
       <p class="light">쓰기 편한 한글. 그에 맞는 만년필.<br>한글에 최적화 된 무게중심과 촉.</p>
-      <p class="quote">고유한 문자를 가진<br>문화수준에 맞는<br><b>만년필</b></p>
+      <p class="quote">고유한 문자를 가진<br>문화수준에 맞는 만년필</p>
     </div>
     <div class="pen-menu">
       <button class="pen-card" onclick="go('reviews',{pen:'베개'})">
