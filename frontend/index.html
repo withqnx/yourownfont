@@ -544,9 +544,10 @@ function mountCurtain(cv, slot){
   const N=LINES.length, MAXLEN=Math.max(1,...LINES.map(l=>l.length));
   const x=cv.getContext('2d');
   let FS=20,SP=FS*1.28,RADIUS=60;
-  const GRAV=0.10,FRIC=0.90,ITER=4,PUSH=3.2;   // PUSH↑ 만지면 크게 흔들림, FRIC↓ 빨리 잦아듦
-  const SPRING=0.14, MAXDX=0.9;                // 제자리 복원력 / 열 이탈 한계(칸 폭 비율) → 엉킴 방지
-  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null,dropT0=0,DROP=60,dragX=0,colW=40;
+  const GRAV=0.10,FRIC=0.945,ITER=4,PUSH=4.2;  // FRIC↑ 오래 출렁(활발), PUSH↑ 손대면 크게
+  const SPRING=0.06, MAXDX=0.72;               // 복원력↓(느슨=활발) / 열 이탈 한계 → 엉킴 차단·열 간격 유지
+  const WHIP=1.25;                             // 만년필 흔들림을 아래로 전달(깊을수록 크게)
+  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null,dropT0=0,DROP=60,dragX=0,prevDX=0,colW=40;
   function layout(){
     DPR=Math.min(2,window.devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;if(!W||!H)return false;
     cv.width=W*DPR;cv.height=H*DPR;x.setTransform(DPR,0,0,DPR,0,0);
@@ -557,7 +558,7 @@ function mountCurtain(cv, slot){
     const availH=Math.max(40,H-penBottom-26);
     // 폭·높이 둘 다 맞춰 글자 크기만 산출 — 줄 구성은 절대 안 바뀜
     FS=Math.round(0.9*Math.max(11,Math.min(26,Math.floor(Math.min(colW/1.12,(availH/MAXLEN)/1.28)))));  // 발 90% 축소
-    SP=FS*1.28;RADIUS=FS*2.5;DROP=H*0.10;
+    SP=FS*1.28;RADIUS=FS*3.4;DROP=H*0.10;   // 반응 반경↑ → 스치기만 해도 예민하게
     const topY=penBottom+Math.round(FS*0.7);   // 첫 글자가 만년필 끝 바로 아래에서 시작(펜이 안 가림)
     cols=[];
     for(let ci=0;ci<N;ci++){
@@ -573,25 +574,30 @@ function mountCurtain(cv, slot){
   }
   function step(){
     const doff=dropOffset();
+    const dragV=dragX-prevDX; prevDX=dragX;   // 만년필이 이번 틱에 움직인 속도
     for(const col of cols){const P=col.pts; const rx=col.x0+dragX;   // 이 열이 돌아갈 세로 제자리 X
       for(let i=1;i<P.length;i++){const p=P[i];
         if(!isFinite(p.x)||!isFinite(p.y)){p.x=p.px=rx;p.y=p.py=col.y0+i*SP+doff;continue;}  // NaN → 제자리로 (엉킴 방지)
         const vx=(p.x-p.px)*FRIC, vy=(p.y-p.py)*FRIC; p.px=p.x;p.py=p.y; p.x+=vx; p.y+=vy+GRAV;
+        // 만년필 흔들림 전달: px는 그대로 두고 x만 밀어 '속도'로 주입. 깊을수록 크게 →
+        // 채찍처럼 아래로 퍼지며 끝 글자가 가장 크게 출렁인다.
+        if(dragV)p.x+=dragV*WHIP*(i/(P.length-1));
         if(active){const dx=p.x-mouse.x,dy=p.y-mouse.y,d=Math.hypot(dx,dy);
           if(d<RADIUS&&d>0.01){const f=(RADIUS-d)/RADIUS*PUSH; p.x+=dx/d*f; p.y+=dy/d*f;}}
-        // 제자리로 당김 — px도 같이 옮겨 관성이 되튀지 않게(진동·엉킴 방지)
+        // 제자리로 당김 — px도 같이 옮겨 관성이 되튀지 않게(진동 방지)
         const back=(rx-p.x)*SPRING; p.x+=back; p.px+=back;
-        const lim=colW*MAXDX;                      // 옆 열을 넘지 못하게 하드 클램프 → 절대 안 엉킴
-        if(p.x>rx+lim){p.x=rx+lim;p.px=p.x;} else if(p.x<rx-lim){p.x=rx-lim;p.px=p.x;}
       }
       for(let k=0;k<ITER;k++){P[0].x=rx;P[0].y=col.y0+doff;
         for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,diff=(d-SP)/d;
           if(i-1===0){b.x-=dx*diff;b.y-=dy*diff;}else{a.x+=dx*diff*0.5;a.y+=dy*diff*0.5;b.x-=dx*diff*0.5;b.y-=dy*diff*0.5;}}}
       P[0].x=rx;P[0].y=col.y0+doff;
-      // 세로 순서 강제: 각 글자는 반드시 윗 글자보다 아래(최소 SP*0.45). 위로 넘어가
-      // 뒤집히거나(180°) 접히는 엉킴을 원천 차단 — 발은 늘 아래로만 늘어진다.
+      // 마지막에 한계를 강제 — 제약 반복(ITER)이 흐트러뜨린 뒤에 적용해야 실효가 있다.
+      // (1) 세로 순서: 각 글자는 반드시 윗 글자보다 아래 → 위로 넘어가 뒤집히는(180°) 엉킴 차단.
+      // (2) 가로 이탈 한계: 제 열에서 colW*MAXDX 이상 못 벗어남 → 옆 열과 겹치는 엉킴 차단.
+      const lim=colW*MAXDX;
       for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i],minY=a.y+SP*0.45;
-        if(b.y<minY){b.y=minY;b.py=b.y;}}
+        if(b.y<minY){b.y=minY;b.py=b.y;}
+        if(b.x>rx+lim){b.x=rx+lim;b.px=b.x;} else if(b.x<rx-lim){b.x=rx-lim;b.px=b.x;}}
     }
   }
   function glyph(p,i,len,alpha){    // 볼드 구절은 붉게·크게·부드럽게 숨쉬듯 맥동, 나머지는 은은히
