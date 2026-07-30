@@ -37,13 +37,15 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
   body{font-family:var(--font);color:var(--ink);background:var(--canvas);-webkit-font-smoothing:antialiased;
-    line-height:1.5;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;overflow-x:hidden;}
+    line-height:1.5;min-height:100dvh;display:flex;align-items:flex-start;justify-content:center;padding:24px;position:relative;overflow-x:hidden;}
   .backdrop{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
   .backdrop b{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--font);
     font-weight:900;font-size:min(62vw,900px);color:#ececec;letter-spacing:-.05em;white-space:nowrap;user-select:none;}
   .brandmark{position:fixed;top:20px;left:24px;z-index:2;font-weight:900;font-size:14px;letter-spacing:-.02em;color:var(--ink);}
   .brandmark i{color:var(--ember);font-style:normal;}
-  .window{position:relative;z-index:1;width:100%;max-width:640px;min-height:min(78dvh,700px);background:var(--paper);
+  /* margin:auto = 여유 있으면 가운데, 내용이 화면보다 길면 자동으로 위 정렬(윗부분 잘림 없음).
+     align-items:center는 넘칠 때 위가 잘려 스크롤도 안 되므로 쓰지 않는다. */
+  .window{position:relative;z-index:1;margin:auto;width:100%;max-width:640px;min-height:min(78dvh,700px);background:var(--paper);
     border:1px solid var(--hairline);border-radius:var(--r-card);
     box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 40px -12px rgba(0,0,0,.22),0 0 0 1px rgba(23,23,23,.04);
     padding:40px 40px 32px;display:flex;flex-direction:column;}
@@ -264,9 +266,20 @@
 <script>
 const stage=document.getElementById('stage'), nav=document.getElementById('nav');
 let stack=[];
-function go(id,ctx){stack.push({id,ctx:ctx||{}});render();}
-function back(){if(stack.length>1){stack.pop();render();}}
-function reset(id){stack=[{id,ctx:{}}];render();}
+// 브라우저/폰 뒤로가기를 앱 안에서 처리한다. (히스토리 연동이 없으면 뒤로가기가
+// 사이트 밖 = 이전에 방문한 다른 주소로 나가버린다.)
+function go(id,ctx){stack.push({id,ctx:ctx||{}});try{history.pushState({d:stack.length},'');}catch(e){}render();}
+function back(){if(stack.length>1)history.back();}   // 실제 pop은 popstate에서
+function reset(id){stack=[{id,ctx:{}}];try{history.replaceState({d:1},'');}catch(e){}render();}
+window.addEventListener('popstate',e=>{
+  // 1) 오버레이(사진 크게보기·크롭·공유카드)가 열려 있으면 그것만 닫고 화면은 유지
+  const ov=document.querySelectorAll('.lightbox,.cropper');
+  if(ov.length){stopSfx();ov[ov.length-1].remove();try{history.pushState({d:stack.length},'');}catch(_){}return;}
+  // 2) 앱 안에서 한 단계 뒤로 (첫 화면에서만 사이트를 벗어남)
+  const d=Math.max(1,(e.state&&e.state.d)||1);
+  if(d<stack.length){stack.length=d;render();}
+  else if(stack.length>1){stack.length--;render();try{history.replaceState({d:stack.length},'');}catch(_){}}
+});
 function cur(){return stack[stack.length-1];}
 function render(){
   stopSfx();   // 다른 화면으로 이동하면 재생 중이던 소리 정지
@@ -603,7 +616,7 @@ function mountCurtain(cv, slot){
   }
   function hit(mx,my){let best=null,bd=1e9;for(const col of cols)for(const p of col.pts){if(!p.g)continue;const d=Math.hypot(p.x-mx,p.y-my);if(d<bd){bd=d;best=p;}}return (best&&bd<FS*1.7)?best.g:null;}
   let _prev=0,_acc=0;
-  function loop(ts){if(!document.body.contains(cv))return;requestAnimationFrame(loop);
+  function loop(ts){if(!document.body.contains(cv)){if(ro)ro.disconnect();return;}requestAnimationFrame(loop);   // 화면 이동 시 정리
     ts=ts||performance.now();if(!_prev)_prev=ts;let dt=ts-_prev;_prev=ts;if(dt>50)dt=50;
     if(parting){drawPart();return;}
     tickDrag();
