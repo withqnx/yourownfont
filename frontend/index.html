@@ -181,7 +181,7 @@
   .how-d{font-weight:400;font-size:13px;color:var(--mid);line-height:1.6;margin-top:4px;word-break:keep-all;}
   /* 편안킈: 만년필 소개 문구(한 폰트로 통일) + 가로 3메뉴 */
   .pen-copy{text-align:center;margin-top:10px;}
-  .pen-copy .light{font-family:var(--font);font-weight:500;font-size:clamp(15px,4vw,18px);line-height:1.9;letter-spacing:-.01em;color:var(--ink-soft);word-break:keep-all;}   /* 덜 연하게 */
+  .pen-copy .light{font-family:var(--font);font-weight:300;font-size:clamp(15px,4vw,18px);line-height:1.9;letter-spacing:-.01em;color:#9a9a9a;word-break:keep-all;}   /* 밝은 회색 + 얇게 */
   /* 인용: 위아래 쌍따옴표 + 한 폰트·한 굵기로 통일(이탤릭 없음), 작게 */
   .pen-copy .quote{margin-top:22px;font-family:var(--font);font-weight:500;font-size:clamp(16px,4.3vw,20px);line-height:1.72;letter-spacing:-.01em;color:var(--ink);word-break:keep-all;}
   .pen-copy .quote::before,.pen-copy .quote::after{display:block;font-size:1.5em;font-weight:700;line-height:.6;color:var(--mid);}
@@ -544,10 +544,10 @@ function mountCurtain(cv, slot){
   const N=LINES.length, MAXLEN=Math.max(1,...LINES.map(l=>l.length));
   const x=cv.getContext('2d');
   let FS=20,SP=FS*1.28,RADIUS=60;
-  const GRAV=0.10,FRIC=0.945,ITER=4,PUSH=4.2;  // FRIC↑ 오래 출렁(활발), PUSH↑ 손대면 크게
+  const GRAV=0.10,FRIC=0.945,ITER=7,PUSH=4.2;  // ITER↑ 밧줄처럼 매끄럽게(떨림↓), 범위는 유지
   const SPRING=0.06, MAXDX=0.72;               // 복원력↓(느슨=활발) / 열 이탈 한계 → 엉킴 차단·열 간격 유지
-  const WHIP=1.25;                             // 만년필 흔들림을 아래로 전달(깊을수록 크게)
-  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null,dropT0=0,DROP=60,dragX=0,prevDX=0,colW=40;
+  const WHIP=0.7;                              // 만년필 흔들림 전달(조금 덜하게)
+  let W,H,DPR,cols=[],mouse={x:-1e4,y:-1e4},active=false,T=0,parting=false,partT0=0,partGo=null,dropT0=0,DROP=60,dragX=0,prevDX=0,dragVs=0,colW=40;
   function layout(){
     DPR=Math.min(2,window.devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;if(!W||!H)return false;
     cv.width=W*DPR;cv.height=H*DPR;x.setTransform(DPR,0,0,DPR,0,0);
@@ -574,7 +574,8 @@ function mountCurtain(cv, slot){
   }
   function step(){
     const doff=dropOffset();
-    const dragV=dragX-prevDX; prevDX=dragX;   // 만년필이 이번 틱에 움직인 속도
+    const rawV=dragX-prevDX; prevDX=dragX; dragVs=dragVs*0.72+rawV*0.28;   // 저역통과 → 툭 끊기지 않고 부드럽게
+    const dragV=dragVs;
     for(const col of cols){const P=col.pts; const rx=col.x0+dragX;   // 이 열이 돌아갈 세로 제자리 X
       for(let i=1;i<P.length;i++){const p=P[i];
         if(!isFinite(p.x)||!isFinite(p.y)){p.x=p.px=rx;p.y=p.py=col.y0+i*SP+doff;continue;}  // NaN → 제자리로 (엉킴 방지)
@@ -583,7 +584,8 @@ function mountCurtain(cv, slot){
         // 채찍처럼 아래로 퍼지며 끝 글자가 가장 크게 출렁인다.
         if(dragV)p.x+=dragV*WHIP*(i/(P.length-1));
         if(active){const dx=p.x-mouse.x,dy=p.y-mouse.y,d=Math.hypot(dx,dy);
-          if(d<RADIUS&&d>0.01){const f=(RADIUS-d)/RADIUS*PUSH; p.x+=dx/d*f; p.y+=dy/d*f;}}
+          // smoothstep 감쇠 — 반경 경계에서 툭 튀지 않고 스르르 밀린다(최대 세기는 동일 = 범위 유지)
+          if(d<RADIUS&&d>0.01){const t=(RADIUS-d)/RADIUS,f=t*t*(3-2*t)*PUSH; p.x+=dx/d*f; p.y+=dy/d*f;}}
         // 제자리로 당김 — px도 같이 옮겨 관성이 되튀지 않게(진동 방지)
         const back=(rx-p.x)*SPRING; p.x+=back; p.px+=back;
       }
